@@ -1,0 +1,603 @@
+---
+title: "'Chuletario' Linear Regression"
+author: "Katyna Sada & Angel Rubio"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  rmdformats::readthedown
+---
+
+```{css, echo=FALSE}
+/*
+Format
+*/
+
+#postamble::before {
+  content: "";
+  display: block;
+  height: 100px;
+  margin: 0em 0px 30px 0px;
+  background-image: url("https://www.unav.edu/documents/2832169/32887778/logo-tecnun+%281%29.jpg/4414b8f8-08dc-71d9-e5bd-d4e71af30146?t=1645532136536");
+  background-size: contain;
+  background-position: center center;
+  background-repeat: no-repeat;
+}
+
+h1.title{
+    font-size: 40pt;
+}
+
+h1{
+    font-size: 25pt;
+}
+
+h2{
+    font-size: 20pt;
+    text-decoration: underline solid;
+}
+
+h3{
+    font-size: 15pt;
+    font-style: italic;
+}
+
+h1{
+    font-family: Helvetica;
+    color: #9BC53D;
+}
+
+h2,h3{
+    font-family: Helvetica;
+    color: #5BC0EB;
+}
+
+h3,h4,h5,h6,legend{
+    font-family: Helvetica;
+    color: #0e0e0e;
+}
+
+
+#postamble {
+    color: #9BC53D;
+    background: #ffffff;
+    text-align: center;
+    font-family: Helvetica;
+    border-top:#5BC0EB;
+}
+
+#sidebar {
+    color: #9BC53D;
+    background: #9BC53D;
+}
+
+#sidebar h2 {
+    color: #ffffff;
+    background-color: #5BC0EB;
+    text-decoration: none;
+}
+
+#sidebar a {
+    color: #ffffff;
+}
+
+#sidebar a:hover {
+    background-color: #5BC0EB;
+    color: #ffffff;
+}
+
+#postamble .date {
+    font-size: 100%;
+    margin-bottom: 0px;
+    color: #E1FAAC;
+}
+
+
+```
+  
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(kableExtra)
+library(htmlTable)
+library(htmltools)
+```
+
+![]()
+
+# Contenido
+
+Guía burros para elegir tu test
+
+Estadísticos puntuales: media, mediana, desviación típica, varianza, mad, IQR,...
+Tests en Tablas de contingencia
+Test de proporciones
+Shapiro
+t-test, Wilcoxon, ANOVA, Kluskal-Wallis
+Regresión lineal simple y múltiple
+Regresión logística
+Transformación de las variables
+Otras regresiones
+
+
+# 1. ¿Qué es una regresión lineal?
+
+<p style="text-align: justify;">**Regresión lineal**: Modelo lineal básico que supone la existencia de una *relación lineal entre dos variables $x$ e $y$*, que está perturbada por un error aleatorio, $\epsilon$. Por lo tanto, para cada valor de $x$, el valor correspondiente de $y$ es una variable aleatoria de la forma:</p>
+
+$$
+y=β_0+β_1x+ ε \quad siendo \quad ε\sim N(0,\sigma^2)
+$$
+
+<p style="text-align: justify;">Es un modelo que trata de explicar la relación que existe entre una variable dependiente $y$ (variable respuesta) y otra variable independiente $x$ (si es simple) o un conjunto de variables independientes  $x_1, x_2 ... x_n$ (si es múltiple).</p>
+
+Preguntas que pueden ayudar a entender... 
+
+* <p style="text-align: justify;">¿Podemos explicar en qué medida, en promedio, cambia $y$ al cambiar $x$?</p>
+* <p style="text-align: justify;">¿Podemos predecir, en promedio, el valor de $y$ con un valor específico de $x$?</p>
+* <p style="text-align: justify;">¿Podemos determinar si la cantidad de cambio en una variable está relacionada, en promedio, con la cantidad de cambio en otra?</p>
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, cache=TRUE}
+library(latex2exp)
+set.seed(123)
+x<-abs(rnorm(10))
+y<-5+2*x+rnorm(10,sd=2)
+real <- 5+2*x
+
+model <- lm(y~x)
+b0_est<-model$coefficients[1]
+b1_est<-model$coefficients[2]
+yEstimadas<-model$fitted.values
+
+plot(x, y,pch =16, xlim = c(-0.0001,max(x)))
+legend(x = "bottomright",
+       legend=c(TeX("$\\beta_0+ \\beta_1x$"), 
+                TeX("$\\hat{\\beta_0}+ \\hat{\\beta_1}x$")),
+       col=c("red", "blue"), lty=1,lwd=2)
+# recta de la regresión lineal
+points(c(0,x), c(b0_est,yEstimadas), type = "l",lwd=2,col="blue")
+points(c(0,x), c(5,real), type = "l",lwd=2,col="red")
+#i<-seq(length(x))
+i<-1
+arrows(x[i]+0.01,y[i],x[i]+0.01,real[i], col="red", length = 0.05, lwd=2)
+arrows(x[i],y[i],x[i],yEstimadas[i], col="blue", length = 0.05, lwd=2)
+
+arrows(0,0,0,b0_est, col="orange", length = 0.05, lwd=2)
+#arrows(0,0,0,5, col="pink", length = 0.05, lwd=2)
+
+points(x[i], yEstimadas[i],pch=19,lwd=2,col="blue")
+
+text(x[i],y[i]+0.5, "valor observado (y_i)",col="black",cex=1.2) 
+text(x[i]-.3,yEstimadas[i], "valor estimado (y_i*)",col="blue",cex=1.2) 
+text(x[i]-0.05,y[i]-1, TeX("$e_i$"),col="blue",cex=1.5) 
+text(x[i]+.05,y[i]-1, TeX("$\\epsilon_i$"),col="red",cex=1.5) 
+text(0.03,b0_est-1, "β0*",col="orange",cex=0.7)
+#text(0.03,5-1, "β0",col="pink",cex=0.7)
+```
+
+  
+* <p style="text-align: justify;">**$\beta_0$** (intercept): Intersección con el eje $y$ de la recta de regresión.</p>
+  + **$\widehat{\beta_0}$:** Intersección estimada.
+  
+* <p style="text-align: justify;">**$\beta_1$** (slope): Pendiente de la recta de regresión (en regresión lineal simple).</p>
+  + **$\widehat{\beta_1}$:** Pendiente estimada.
+  
+* <p style="text-align: justify;">**$y_i$** (valor observado): Valor real, el que me dan para hacer los cálculos.</p>
+  + **$\widehat{y_i}$** (valor estimado): Se calcula con la recta de regresión estimada (lo que se predice). 
+  
+* <p style="text-align: justify;">**$ε_i$** (error aleatorio): Distancia de $y_i$ a la recta de regresión real ("la teórica"). Estos valores son desconocidos y se quieren estimar.</p>
+
+* <p style="text-align: justify;">**$e_i$** (residuals): Distancia de $y_i$ a la recta de regresión estimada ($\widehat{y_i}$) (la que nosotros calculamos).</p>
+
+$$
+e_i=y_i-\widehat{y_i}
+$$
+
+* **$\sigma^2$**: Varianza de los errores aleatorios ($ε_i$).
+* **$s^2$**: Estimación de la varianza de los errores.  
+
+$$
+s^2 = \frac{\sum e_i^2}{n-2} = \frac{\sum(y_i-\hat{y}_i)^2}{n-2}
+$$
+
+* **$s$** (residual standard error): Error estándar de la regresión. 
+
+$$
+s = \sqrt{s^2}
+$$
+
+Diferencia entre $\beta$ y $\widehat{\beta}$ ? ¿y entre $\sigma$ y $s$ ?
+* Recordemos que la recta que queremos modelar tiene la forma: 
+$$
+y_i = β_0 + β_1 * x_i + \epsilon \quad siendo \quad \epsilon\sim N(0,\sigma^2) \quad
+$$
+
+* Nuestro objetivo sería, entonces, conocer los valores de $β_0$, $β_1$ y $\sigma$. Como no los conocemos, entonces vamos a **estimar** los valores de $β_0$ y $β_1$ y $\sigma$. De modo que nuestro objetivo real será conocer $\widehat{β_0}$, $\widehat{β_1}$ y $\widehat{\sigma}$. De esta manera, planteamos que: 
+
+$$
+  y_i = β_0 + β_1 * x_i + \epsilon \quad siendo \quad \epsilon\sim N(0,\sigma^2)  \quad (1) \Longrightarrow \quad	\widehat{Y} = \widehat{β_0} + \widehat{β_1}*x_i
+$$
+
+* En la recta (2) $s$ es un estimador de $\sigma$.
+* No conocemos los valores de $β_0$ y $β_1$ porque son valores poblacionales y nuestra muestra, en el mejor de los casos, nos permitirá hallar valores de $β$ que, obviamente, variarán si varía la muestra.  
+
+* En resumen: **nuestro objetivo será obtener tres estimadores: $\widehat{β_0}$, $\widehat{β_1}$ y $s$.**
+
+
+# 2. ¿Cómo construyo una regresión lineal?
+
+## 2.1. Con funciones de R
+
+### Crear el modelo automáticamente
+
+```{r echo=TRUE}
+model<-lm(y~x) # dependiente~independientes
+```
+
+### Obtener los coeficientes (los $\widehat{\beta_s}$)
+
+*Opción A:*
+
+```{r echo=TRUE}
+coef(model)
+beta0 <- coef(model)[1] # intersección 
+beta1 <- coef(model)[2] # pendiente
+```
+
+*Opción B:* Ver el resumen del modelo y observar los valores en la columna *Estimate*
+
+```{r echo=TRUE}
+summary(model)
+```
+
+### Obtener los valores estimados (los $\widehat{y_i}$)
+
+```{r echo=TRUE}
+y_estimados <- model$fitted.values
+y_estimados
+```
+
+### Obtener los residuos (los $e_i$)
+
+```{r echo=TRUE}
+residuos <- model$residuals
+residuos
+```
+
+### Obtener el standard error ($s$)
+
+Sacar el valor de *Residual standard error* del resumen del modelo. 
+
+```{r echo=TRUE}
+s <- summary(model)$sigma # se guarda dentro de sigma
+s
+```
+
+
+## 2.2. Usando las fórmulas de la teoría...
+
+### Obtener los valores de $\widehat{\beta_0}$ y $\widehat{\beta_1}$
+
+(*opción c*)
+
+$$
+\hat{\beta}=\left(A^{\top} A\right)^{-1} A^{\top} y
+$$
+```{r echo=TRUE}
+A <- model.matrix(model)
+beta <- solve(t(A) %*% A) %*% t(A) %*% y
+print(beta)
+```
+
+El resultado es el vector: $\left[\begin{array}{c}\widehat{\beta_0} \\ \widehat{\beta_1}\end{array}\right]$ estimación del vector: $\left[\begin{array}{c}\beta_{0} \\ \beta_{1}\end{array}\right]$
+
+### Obtener los valores estimados ($\widehat{y}_i = \widehat{\beta}_0+\widehat{\beta}_1x_i$)
+
+```{r echo=TRUE}
+y_estimados <- beta0 + beta1*x
+y_estimados
+```
+
+### Obtener los residuos ($e_i=y_i-\widehat{y_i}$)
+
+```{r echo=TRUE}
+residuos <- y-y_estimados
+residuos
+```
+
+### Obtener el standard error ($s = \sqrt{\frac{\sum e_i^2}{n-2}}$)
+
+```{r echo=TRUE}
+n <- length(x)
+s <- sqrt(sum(residuos^2)/(n-2))
+s
+```
+
+# 3. ¿Qué otros datos de los modelos nos interesan?
+
+* <p style="text-align: justify;">**R-cuadrado** (multiple R-squared): Es una medida utilizada para explicar que nivel de variabilidad de un factor puede ser causada por su relación con otro factor relacionado (que % de la varianza de $y$ se explica por $x$).</p>
+
+* <p style="text-align: justify;">**Estadístico-F** (F-statistic): $H_0$ es que todas las $β_s$ (excepto la intercepción) son iguales a cero.</p>
+  + **p-value del Estadístico-F**
+  + En regresión simple la única $β$ diferente del intercepto es $β_1$, este p-value es idéntico al p-value del coeficiente.
+
+* <p style="text-align: justify;">**$SE_{\hat{\beta}_1}$** (error estandar del coeficiente $\hat{\beta}_1$): Da una idea de la variabilidad.</p>
+
+$$
+SE_{\hat{\beta}_1} = \frac{s_{Y|X}}{\sqrt{\sum(x_i-\overline{x})^2}}=\frac{s_{Y|X}}{\sqrt{\operatorname{var}(x)(n-1)}}
+$$ 
+
+siendo 
+
+$$
+s_y=s_{Y|X}=s = \sqrt{\frac{\sum(y_i-\hat{y}_i)^2}{n-2}}
+$$
+
+* <p style="text-align: justify;">**t value de $\hat{\beta}_i$**: Cociente entre el valor de $\hat{\beta_i}$ y su error estándar... (habitualmente se hará con $\beta_1$ pero sirve para cualquier $\beta$).</p>
+
+$$
+{{{\hat{\beta}_1}-\beta_i} \over SE_{\hat{\beta}_i}} \sim t_{n-2} \quad donde \quad H_0: \beta_i = 0
+$$
+
+* <p style="text-align: justify;">**p-value de $\hat{\beta}_i$**: P-value para cada término. Comprueba la $H_0$ de que el coeficiente es igual a cero (no tiene efecto). Un valor p < 0,05 indica que se puede rechazar la $H_0$ y significa que es probable que el coeficiente tenga un efecto en el modelo.</p>
+
+
+## 3.1. Con funciones de R
+
+### Obtener el R-cuadrado
+
+Del resumen del modelo sacar el valor de *Multiple R-squared*:
+
+```{r echo=TRUE}
+Rcuadrado <- summary(model)$r.squared
+Rcuadrado
+```
+
+En este caso el R-cuadrado nos dice que el 35.88% de la varianza de $y$ se explica por $x$.
+
+### Obtener el Estadístico-F y su p-value
+
+Del resumen del modelo sacar el valor de *F-statistic* y su *p-value*:
+
+```{r echo=TRUE}
+Fstatistic <- summary(model)$fstatistic[1]
+```
+
+Para el p-value hay que ver el summary
+
+```{r}
+# F-statistic: 4.478 on 1 and 8 DF,  p-value: 0.06723
+```
+
+o SOLO en regresión simple...
+
+```{r}
+summary(model)$coefficients[8] #p-value del beta1
+```
+
+### Obtener el error estandar de los coeficientes $\hat{\beta}_i$ ($SE_{\hat{\beta}_i}$)
+
+Del resumen del modelo sacar el valor de los valores de la columna *Std. Error*
+
+```{r echo=TRUE}
+SE_b0 <- summary(model)$coefficients[3] # para guardar el valor de SE_b0
+SE_b1 <- summary(model)$coefficients[4] # para guardar el valor de SE_b1
+SE_b0
+SE_b1
+```
+
+### Obtener el t-value de $\hat{\beta}_i$
+
+Del resumen del modelo sacar el valor de la columna *t value*:
+
+```{r echo=TRUE}
+tvalue_b0 <- summary(model)$coefficients[5] 
+tvalue_b1 <- summary(model)$coefficients[6]
+tvalue_b0
+tvalue_b1
+```
+
+### Obtener el p-value de $\hat{\beta}_i$
+
+Del resumen del modelo sacar el valor de la columna *Pr(>|t|)*:
+
+```{r echo=TRUE}
+pvalue_b0 <- summary(model)$coefficients[7] 
+pvalue_b1 <- summary(model)$coefficients[8] 
+pvalue_b0
+pvalue_b1 # En este caso no es significativo
+```
+
+## 3.2. Usando las fórmulas de la teoría…
+
+### Obtener el p-value del Estadístico-F
+
+<p style="text-align: justify;">El p-value puede obtenerse utilizando la `pf` (función de distribución de la distribución F con df1 y df2 grados de libertad).</p>
+
+```{r echo=TRUE}
+n  <- length(x)
+df1 <- 1
+df2 <- n-2
+pf(Fstatistic,df1,df2, lower.tail = F)
+```
+
+
+### Obtener el error estandar de los coeficientes $\hat{\beta}_i$ 
+
+*Opcion A:* 
+
+<p style="text-align: justify;">$SE_{\hat{\beta}_i}^2=[\left(A^{\top} A\right)^{-1}s^{2}]_{ii}$ es decir, el elemento $ii$ de la matriz $\left(A^{\top} A\right)^{-1}$ multiplicado por $s^2$.</p>
+
+```{r}
+X <- model.matrix(model)
+Sigma2Est <- solve(t(X)%*%X)*s^2
+SE_b0 <- sqrt(Sigma2Est[1,1])
+SE_b1 <- sqrt(Sigma2Est[2,2])
+print(c(SE_b0, SE_b1))
+```
+
+*Opcion B:*
+
+`vcov(model)` devuelve directamente $\left(A^{\top} A\right)^{-1}s^2$. Por tanto,
+
+```{r}
+sqrt(diag(vcov(model)))
+```
+
+devuelve los estándar errors de las $\beta$s
+
+*Opcion C:* 
+
+Sólo para $\beta_1$ en la regresión simple.
+
+($SE_{\hat{\beta}_1}=\frac{s}{\sqrt{\operatorname{var}(x)(n-1)}}$)
+
+```{r echo=TRUE}
+n <- length(x)
+SE_b1 <- s/sqrt(var(x)*(n-1))
+SE_b1
+```
+
+### Obtener el t-value de $\hat{\beta}_i$ (=${{{\hat{\beta}_1}-\beta_1} \over SE_{\hat{\beta}_1}}$)
+
+<p style="text-align: justify;">Si la hipótesis nula es $H_0:\beta_i=0$, entonces $\hat{\beta}_i$ (=${{{\hat{\beta}_1}} \over SE_{\hat{\beta}_1}}$.</p>
+
+```{r echo=TRUE}
+# the T-statistic = estimate / standard error
+out <- summary(model)
+info <- data.frame(out$coefficients,stringsAsFactors = F)
+info$Estimate/info$Std..Error # primero el de beta0 y luego el de beta1
+```
+
+### Obtener el p-value de $\hat{\beta}_i$
+
+<p style="text-align: justify;">Los p-values de las betas pueden obtenerse utilizando la `pt` (función de distribución de la t-Student con df grados de libertad) que corresponde al estadístico t.</p>
+
+```{r echo=TRUE}
+n <- length(x)
+pvalue_b0 <- 2 * pt(abs(tvalue_b0), n-2, lower.tail = F)
+pvalue_b1 <- 2 * pt(abs(tvalue_b1), n-2, lower.tail = F)
+pvalue_b0
+pvalue_b1
+```
+
+# 4. ¿Y los intervalos de confianza?
+
+<p style="text-align: justify;">Los intervalos permiten estimar un rango de valores que **puede decirse con una confianza razonable (normalmente el 95%) que contiene el verdadero parámetro de la población**.</p>  
+
+* **Intervalo de confianza de los coeficientes de $\hat{\beta}_i$:**
+
+$$
+\hat{\beta}_1 \pm t_{crit, n-2}·SE_{\hat{\beta}_1}
+$$
+
+* <p style="text-align: justify;">**Intervalo de confianza de $\mu_{y*} = E(\hat{y})$ (esperanza):** Al estimar el intervalo de confianza de $\mu_y$, la pregunta que se intenta responder es: ¿Cuál es la respuesta media para un valor concreto de $x$?</p>
+
+$$
+\mu_{y*} = \hat{y^{\star}} \pm t_{\alpha / 2, n-2} s_y \sqrt{\frac{1}{n}+\frac{\left(x^{\star}-\bar{x}\right)^{2}}{(n-1) s_{x}^{2}}}
+$$
+
+o
+
+$$
+\mu_{y^{\star}} = \hat{y^{\star}} \pm t_{\alpha / 2, n-2} s_y \sqrt{\left(\frac{1}{n}+\frac{\left(x^{\star}-\bar{x}\right)^{2}}{\sum_i\left(x_{i}-\bar{x}^{2}\right)}\right)}
+$$
+
+* <p style="text-align: justify;">**Intervalo de confianza de las predicciones $\hat{y}_i$** : Al estimar el intervalo de confianza de $\hat{y}_i$, la pregunta que se intenta responder es: ¿Qué valor tendrá la $y$ suponiendo un valor determinado de $x$?</p> 
+  + <p style="text-align: justify;">Lo que nos dice es que, en términos generales, se espera que el 95% de los puntos estén dentro de este intervalo de confianza.</p>
+  + El intervalo es más amplio que el de $\mu_y$
+  
+$$
+y^{\star} = \hat{y^\star} \pm t_{\alpha / 2, n-2}s_y \sqrt  {\left(1+\frac{1}{n}+\frac{\left(x^{\star}-\bar{x}\right)^{2}}{\sum_i\left(x_{i}-\bar{x}^{2}\right)}\right)}
+$$
+
+<p style="text-align: justify;">En este caso, la fórmula es casi idéntica a la anterior. La única diferencia es que se añade un $1$ en el radical.</p>
+
+## 4.1. Con funciones de R
+
+### Obtener el intervalo de confianza de los coeficientes de $\hat{\beta}_i$
+
+Calcular intervalo con la función `confint`:
+
+```{r echo=TRUE}
+# en este caso sería del 95%
+confint(model, level = .95)
+intervalo_b0 <- confint(model, level = .95)[1,] # primera fila es el beta0
+intervalo_b1 <- confint(model, level = .95)[2,] # segunda fila es el beta1
+```
+
+### Obtener el intervalo de confianza de $\mu_y$
+
+Calcular intervalo con la función `predict` y la opción `confidence`:
+
+<p style="text-align: justify;">**IMPORTANTE**: Al usar la función `predict` siempre hay que meter los valores en un dataframe y los nombres de las variables en el `data.frame` deben ser idénticos a los nombres de las variables del modelo.</p>
+
+```{r echo=TRUE}
+# en este caso sería del 95%
+plot(y~x,pch=16,ylim = c(2,15))
+x_new <- seq(-2,2,by =.1) 
+df_x_new <- data.frame(x=x_new) # HAY QUE METER LOS VALORES EN UN DATAFRAME
+lm.fit <- predict(model, newdata = df_x_new, interval="confidence") 
+lm.fit <- as.data.frame(lm.fit)
+lines(x_new,lm.fit$fit,col="red",lwd=2)
+lines(x_new,lm.fit$lwr,col="red",lty=2,lwd=2)
+lines(x_new,lm.fit$upr,col="red",lty=2,lwd=2)
+```
+
+¿Y puedo obtener el intervalo para un único valor de $x$?
+
+```{r}
+df_valor_nuevo <- data.frame(x=1.5)
+predict(model, newdata = df_valor_nuevo, interval="confidence") 
+```
+
+
+### Obtener el intervalo de las predicciones $\hat{y}_i$
+
+Calcular intervalo con la función `predict` y la opción `prediction`
+
+```{r echo=TRUE}
+# en este caso sería del 95%
+plot(y~x,pch=16, ylim = c(2,15))
+x_new <- seq(-2,2,by =.1) 
+df_x_new <- data.frame(x=x_new) # HAY QUE METER LOS VALORES EN UN DATAFRAME
+lm.fit <- predict(model, newdata = df_x_new, interval="prediction") 
+lm.fit <- as.data.frame(lm.fit)
+lines(x_new,lm.fit$fit,col="red",lwd=2)
+lines(x_new,lm.fit$lwr,col="red",lty=2,lwd=2)
+lines(x_new,lm.fit$upr,col="red",lty=2,lwd=2)
+```
+
+
+# 5. ¿Cómo uso mi regresión? (predecir) 
+
+<p style="text-align: justify;">Una regresión lineal permite realizar estimaciones puntuales a partir de la recta. Al asignar valores a $x$, el valor de $y$ puede considerarse una predicción (o estimación).</p>
+
+La pregunta en este caso sería: ¿Cuál es el valor de $y$  si  $x=1.5$?
+
+*Opción A:* Usar la función `predict`
+
+```{r echo=TRUE}
+df_valor_nuevo <- data.frame(x=1.5)
+predict(model, newdata = df_valor_nuevo) 
+```
+
+*Opción B:* Usar los coeficientes de los $\hat{\beta}_i$
+
+```{r echo=TRUE}
+Xpred <- cbind(1,c(1.5))
+Xpred %*% coef(model)
+
+# o...
+beta0+beta1*1.5
+```
+
+
+
+
+
+
+
+
+
+
+
+
+

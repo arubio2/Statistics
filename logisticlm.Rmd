@@ -1,0 +1,267 @@
+---
+title: "Worked examples of logistic regression"
+author: "Angel Rubio"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  rmdformats::readthedown
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+```{css, echo=FALSE}
+/*
+Format
+*/
+
+#postamble::before {
+  content: "";
+  display: block;
+  height: 100px;
+  margin: 0em 0px 30px 0px;
+  background-image: url("https://img.gothru.org/4722/17631445273227275727/overlay/assets/20201012135643.7TCZAJ.jpg?save=optimize");
+  background-size: contain;
+  background-position: center center;
+  background-repeat: no-repeat;
+}
+
+h1.title{
+    font-size: 40pt;
+}
+
+h1{
+    font-size: 25pt;
+}
+
+h2{
+    font-size: 20pt;
+    text-decoration: underline solid;
+}
+
+h3{
+    font-size: 15pt;
+    font-style: italic;
+}
+
+h1,h2,h3{
+    font-family: Helvetica;
+    color: #aa2133;
+}
+
+h3,h4,h5,h6,legend{
+    font-family: Helvetica;
+    color: #0e0e0e;
+}
+
+
+#postamble {
+    color: #aa2133;
+    background: #ffffff;
+    text-align: center;
+    font-family: Helvetica;
+}
+
+#sidebar {
+    color: #ffffff;
+    background: #aa2133;
+}
+
+#sidebar h2 {
+    color: #ffffff;
+    background-color: #0e0e0e;
+    text-decoration: none;
+}
+
+#sidebar a {
+    color: #ffffff;
+}
+
+#sidebar a:hover {
+    background-color: #0e0e0e;
+    color: #ffffff;
+}
+
+```
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Introduction
+
+In this document, we will provide three worked examples of logistic regression using real data. Each example will demonstrate different aspects of logistic regression, including continuous and categorical variables, and a contingency table.
+
+## Example 1: One Independent Continuous Variable
+
+We will use the mtcars dataset to fit a logistic regression model with am (transmission: 0 = automatic, 1 = manual) as the response variable and wt (weight) as the independent variable.
+
+```{r}
+# Load necessary libraries
+library(ggplot2)
+
+# Load the mtcars dataset
+data("mtcars")
+
+# Fit logistic regression model
+logit_model1 <- glm(am ~ wt, data = mtcars, family = binomial)
+
+# Display the summary of the model
+summary(logit_model1)
+```
+
+# Predicted Probabilities
+
+We will create a plot to show how the predicted probabilities of having a manual transmission (am = 1) change according to the weight (wt).
+
+```{r}
+# Create a data frame for predictions
+pred_data <- data.frame(wt = seq(min(mtcars$wt), max(mtcars$wt), length.out = 100))
+pred_data$prob <- predict(logit_model1, newdata = pred_data, type = "response")
+
+# Plot the predicted probabilities
+ggplot(mtcars, aes(x = wt, y = am)) +
+  geom_point() +
+  geom_line(data = pred_data, aes(x = wt, y = prob), color = "blue") +
+  labs(title = "Predicted Probability of Manual Transmission vs Weight",
+       x = "Weight (1000 lbs)",
+       y = "Probability of Manual Transmission") +
+  theme_minimal()
+```
+
+# t-test Comparison
+
+We will perform a t-test to compare wt for different levels of am. For simplicity, we will divide am into two groups: automatic and manual.
+
+```{r}
+# Perform t-test
+t_test <- t.test(wt ~ am, data = mtcars)
+
+cat("t-test Results:\n")
+print(t_test)
+```
+
+# Boxplot of Results
+
+We will create a boxplot to visualize the distribution of wt for the two transmission types.
+
+```{r}
+# Create boxplot
+ggplot(mtcars, aes(x = factor(am), y = wt)) +
+  geom_boxplot() +
+  labs(title = "Boxplot of Weight by Transmission Type",
+       x = "Transmission (0 = Automatic, 1 = Manual)",
+       y = "Weight (1000 lbs)") +
+  theme_minimal()
+```
+
+## Example 2: Multiple Independent Variables
+
+We will use the mtcars dataset to fit a logistic regression model with am as the response variable and wt (weight), hp (horsepower), and cyl (number of cylinders) as independent variables.
+
+```{r}
+# Fit logistic regression model
+logit_model2 <- glm(am ~ wt + hp + factor(cyl), data = mtcars, family = binomial)
+
+# Display the summary of the model
+summary(logit_model2)
+```
+
+# Interpretation of Terms
+
+The summary of the model provides the following information:
+
+* Intercept: The log-odds of having a manual transmission when all predictors are zero.
+
+* wt: The change in log-odds of having a manual transmission for a one-unit increase in wt, holding other variables constant.
+
+* hp: The change in log-odds of having a manual transmission for a one-unit increase in hp, holding other variables constant.
+
+* factor(cyl): The change in log-odds of having a manual transmission for different levels of cyl, holding other variables constant.
+
+## Example 3: Contingency Table
+
+We will use the HairEyeColor dataset to fit a logistic regression model with hair color as the response variable and eye color as the predictor.
+
+```{r}
+# Load the HairEyeColor dataset
+data("HairEyeColor")
+
+# Convert the dataset to a data frame
+hair_eye <- as.data.frame(HairEyeColor)
+
+# Filter the data to include only blue and brown eyes
+hair_eye_filtered <- subset(hair_eye, Eye %in% c("Blue", "Brown"))
+
+# Create a binary response variable for eye color (Blue vs. Brown)
+hair_eye_filtered$EyeBinary <- ifelse(hair_eye_filtered$Eye == "Blue", 1, 0)
+
+# Fit logistic regression model
+logit_model3 <- glm(EyeBinary ~ Hair + Sex, data = hair_eye_filtered, family = binomial, weights = Freq)
+
+# Display the summary of the model
+summary(logit_model3)
+```
+
+### Summary and Explanation
+
+The summary of the model provides the following information:
+
+* Intercept: The log-odds of having blue eyes for individuals with black hair and male sex (reference categories).
+
+* Hair: The change in log-odds of having blue eyes for different hair colors compared to the reference category (black hair), holding sex constant.
+
+* SexFemale: The change in log-odds of having blue eyes for females compared to males, holding hair color constant.
+
+```{r}
+# Display the coefficients in a more interpretable form
+exp(coef(logit_model3))
+```
+
+The coefficients in the model can be exponentiated to interpret them as odds ratios. The odds ratios indicate how the odds of having blue eyes change for different hair colors and for females compared to males.
+
+# Exercises
+
+## Exercise 1: Fit a Logistic Regression Model
+
+Fit a logistic regression model with `am` (transmission: 0 = automatic, 1 = manual) as the response variable and `hp` (horsepower) as the independent variable. Display the summary of the model.
+
+<details>
+<summary>Show Solution</summary>
+```{r exercise-1, echo=TRUE}
+# Fit logistic regression model
+logit_model <- glm(am ~ hp, data = mtcars, family = binomial)
+summary(logit_model)
+```
+</details>
+
+## Exercise 2: Model Predictions
+
+Predict the probability of am being 1 (manual transmission) for a car with 110 horsepower using the logistic regression model from Exercise 1. Display the predicted probability.
+
+<details>
+<summary>Show Solution</summary>
+```{r}
+# Solution
+new_data <- data.frame(hp = 110)
+predicted_prob <- predict(logit_model, newdata = new_data, type = "response")
+predicted_prob
+```
+</details>
+
+## Exercise 3: Model Accuracy
+Calculate the accuracy of the logistic regression model from Exercise 1 on the mtcars dataset.
+
+<details>
+<summary>Show Solution</summary>
+```{r}
+# Solution
+predicted_classes <- ifelse(predict(logit_model, type = "response") > 0.5, 1, 0)
+accuracy <- mean(predicted_classes == mtcars$am)
+accuracy
+```
+</details>
+
+
+# Conclusion
+
+In this example, we provided a worked example of logistic regression using a contingency table with only blue and brown eyes from the HairEyeColor dataset. We demonstrated how to fit the model, interpret the coefficients, and understand the results. This example helps in understanding the application of logistic regression to categorical data in R.

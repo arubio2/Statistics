@@ -1,0 +1,302 @@
+---
+title: "Multinomial regression"
+author: "Angel Rubio"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  rmdformats::readthedown
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+```{css, echo=FALSE}
+/*
+Format
+*/
+
+#postamble::before {
+  content: "";
+  display: block;
+  height: 100px;
+  margin: 0em 0px 30px 0px;
+  background-image: url("https://img.gothru.org/4722/17631445273227275727/overlay/assets/20201012135643.7TCZAJ.jpg?save=optimize");
+  background-size: contain;
+  background-position: center center;
+  background-repeat: no-repeat;
+}
+
+h1.title{
+    font-size: 40pt;
+}
+
+h1{
+    font-size: 25pt;
+}
+
+h2{
+    font-size: 20pt;
+    text-decoration: underline solid;
+}
+
+h3{
+    font-size: 15pt;
+    font-style: italic;
+}
+
+h1,h2,h3{
+    font-family: Helvetica;
+    color: #aa2133;
+}
+
+h3,h4,h5,h6,legend{
+    font-family: Helvetica;
+    color: #0e0e0e;
+}
+
+
+#postamble {
+    color: #aa2133;
+    background: #ffffff;
+    text-align: center;
+    font-family: Helvetica;
+}
+
+#sidebar {
+    color: #ffffff;
+    background: #aa2133;
+}
+
+#sidebar h2 {
+    color: #ffffff;
+    background-color: #0e0e0e;
+    text-decoration: none;
+}
+
+#sidebar a {
+    color: #ffffff;
+}
+
+#sidebar a:hover {
+    background-color: #0e0e0e;
+    color: #ffffff;
+}
+
+```
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Introduction
+
+Multinomial regression is a type of regression analysis used to predict the outcome of a categorical dependent variable with more than two categories. It is an extension of logistic regression to the case where the dependent variable is nominal with more than two levels. The multinomial regression model generalizes logistic regression by allowing more than two discrete outcomes.
+
+## Hypotheses of Multinomial Regression
+The key hypotheses for multinomial regression are:
+
+* Independence of Irrelevant Alternatives (IIA): This assumption states that the relative odds of choosing between any two alternatives are independent of the presence or characteristics of other alternatives.
+
+* Linearity: The relationship between the independent variables and the log odds of the dependent variable is linear.
+
+* No multicollinearity: The independent variables should not be too highly correlated with each other.
+
+## Data and Packages
+
+For this example, we will use the iris dataset from the datasets package. This dataset contains measurements of different characteristics of iris flowers and their species.
+
+```{r}
+# Load necessary packages
+library(nnet)
+library(datasets)
+library(dplyr)
+library(ggplot2)
+
+# Load the iris dataset
+data(iris)
+head(iris)
+```
+
+## Data Preparation
+The iris dataset contains 150 observations of iris flowers, with 4 continuous variables (Sepal.Length, Sepal.Width, Petal.Length, Petal.Width) and one categorical variable (Species). We will use Species as the dependent variable and the continuous variables as independent variables.
+
+```{r}
+# Convert Species to a factor
+iris$Species <- as.factor(iris$Species)
+
+# Check the structure of the dataset
+str(iris)
+```
+
+
+# Multinomial Regression Model
+
+We will fit a multinomial regression model using the multinom function from the nnet package.
+
+```{r}
+# Fit the multinomial regression model
+model <- multinom(Species ~ Sepal.Length + Sepal.Width + Petal.Length + Petal.Width, data = iris)
+
+# Summary of the model
+summary(model)
+```
+
+# Model Interpretation
+
+The coefficients in the summary output represent the change in the log odds of the dependent variable being in one category versus the reference category for a one-unit change in the predictor variable.
+
+# Predictions
+We can use the model to make predictions on the training data.
+
+```{r}
+# Make predictions
+predictions <- predict(model, iris)
+
+# Create a confusion matrix to evaluate the model
+table(Predicted = predictions, Actual = iris$Species)
+```
+
+# Model Accuracy
+
+We can calculate the accuracy of the model by comparing the predicted species with the actual species.
+
+```{r}
+# Calculate accuracy
+accuracy <- mean(predictions == iris$Species)
+paste("Accuracy:", round(accuracy, 2))
+```
+
+# Additional Example with Contingency Table
+
+In this example, we'll use a contingency table to perform multinomial regression. Let's assume we have survey data on preferred modes of transport across different age groups.
+
+## Data
+
+Here's a contingency table representing the survey data:
+
+| Mode of Transport | Age Group 1 | Age Group 2 | Age Group 3 |
+|-------------------|-------------|-------------|-------------|
+| Car               | 40          | 30          | 20          |
+| Bike              | 20          | 25          | 25          |
+| Public Transport  | 15          | 20          | 30          |
+| Walking           | 25          | 25          | 25          |
+
+We'll convert this data into a format suitable for multinomial regression analysis.
+
+```{r prepare-contingency-data}
+# Create a contingency table
+transport_data <- data.frame(
+  Transport = rep(c("Car", "Bike", "Public Transport", "Walking"), each = 3),
+  AgeGroup = rep(c("Age Group 1", "Age Group 2", "Age Group 3"), times = 4),
+  Count = c(40, 30, 20, 20, 25, 25, 15, 20, 30, 25, 25, 25)
+)
+
+# Convert AgeGroup and Transport to factors
+transport_data$AgeGroup <- as.factor(transport_data$AgeGroup)
+transport_data$Transport <- as.factor(transport_data$Transport)
+
+head(transport_data)
+```
+
+# Multinomial Regression Model
+We will fit a multinomial regression model to predict the mode of transport based on age group.
+
+```{r}
+
+# Fit the multinomial regression model
+model_contingency <- multinom(Transport ~ AgeGroup, weights = Count, data = transport_data)
+# Summary of the model
+summary(model_contingency)
+```
+
+# Exercises
+
+To reinforce your understanding of multinomial regression, please complete the following exercises:
+
+1. **Exercise 1**: Fit a multinomial regression model using only `Petal.Length` and `Petal.Width` as predictors. Summarize the model and interpret the coefficients.
+
+2. **Exercise 2**: Calculate the confusion matrix and the accuracy of the new model from Exercise 1.
+
+3. **Exercise 3**: Visualize the relationship between `Petal.Length` and `Petal.Width` with the predicted species from the new model using a scatter plot.
+
+4. **Exercise 4**: Using the fitted model from the contingency table, predict the preferred mode of transport for each age group. Summarize the predictions and calculate the probabilities for each mode of transport within each age group.
+
+<details>
+<summary>Show Solutions</summary>
+
+## Solutions
+
+### Solution to Exercise 1
+
+```{r exercise-1}
+# Fit the multinomial regression model with Petal.Length and Petal.Width
+model_ex1 <- multinom(Species ~ Petal.Length + Petal.Width, data = iris)
+
+# Summary of the model
+summary(model_ex1)
+```
+
+The coefficients in the summary output represent the change in the log odds of the dependent variable being in one category versus the reference category for a one-unit change in the predictor variable.
+
+### Solution to Exercise 2
+
+```{r}
+# Make predictions
+predictions_ex1 <- predict(model_ex1, iris)
+
+# Create a confusion matrix to evaluate the model
+confusion_matrix_ex1 <- table(Predicted = predictions_ex1, Actual = iris$Species)
+confusion_matrix_ex1
+
+# Calculate accuracy
+accuracy_ex1 <- mean(predictions_ex1 == iris$Species)
+paste("Accuracy:", round(accuracy_ex1, 2))
+``` 
+
+### Solution to Exercise 3
+
+```{r}
+# Visualize the relationship between Petal.Length and Petal.Width with predicted species
+iris_with_preds <- iris
+iris_with_preds$Predicted_Species <- predictions_ex1
+
+ggplot(iris_with_preds, aes(x = Petal.Length, y = Petal.Width, color = Predicted_Species)) +
+  geom_point() +
+  labs(title = "Petal Length vs Petal Width with Predicted Species",
+       x = "Petal Length",
+       y = "Petal Width")
+```
+
+
+### Solution to Exercise 4
+
+```{r}
+
+# Make predictions
+predictions_contingency <- predict(model_contingency, newdata = transport_data, type = "probs")
+
+# Add the predicted probabilities to the original data
+predicted_data <- cbind(transport_data, predictions_contingency)
+
+# Display the updated data
+predicted_data
+
+# Reshape the data for better readability
+library(tidyr)
+predicted_probs_long <- predicted_data %>%
+  pivot_longer(cols = starts_with("Car"):starts_with("Walking"), 
+               names_to = "Predicted_Transport", 
+               values_to = "Probability") %>%
+  select(AgeGroup, Predicted_Transport, Probability)
+
+# Display the reshaped data
+predicted_probs_long
+
+
+```
+
+
+
+</details>
+  
+# Conclusion
+In this example, we demonstrated how to perform multinomial regression using the iris dataset. Multinomial regression is a powerful tool for modeling categorical outcomes with more than two levels. The nnet package in R provides a convenient function multinom to fit such models. The model we built showed reasonable accuracy in predicting the species of iris flowers based on their measurements.

@@ -1,0 +1,232 @@
+---
+title: "Correlations"
+author: "Angel Rubio"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  rmdformats::readthedown
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+```{css, echo=FALSE}
+/*
+Format
+*/
+
+#postamble::before {
+  content: "";
+  display: block;
+  height: 100px;
+  margin: 0em 0px 30px 0px;
+  background-image: url("https://img.gothru.org/4722/17631445273227275727/overlay/assets/20201012135643.7TCZAJ.jpg?save=optimize");
+  background-size: contain;
+  background-position: center center;
+  background-repeat: no-repeat;
+}
+
+h1.title{
+    font-size: 40pt;
+}
+
+h1{
+    font-size: 25pt;
+}
+
+h2{
+    font-size: 20pt;
+    text-decoration: underline solid;
+}
+
+h3{
+    font-size: 15pt;
+    font-style: italic;
+}
+
+h1,h2,h3{
+    font-family: Helvetica;
+    color: #aa2133;
+}
+
+h3,h4,h5,h6,legend{
+    font-family: Helvetica;
+    color: #0e0e0e;
+}
+
+
+#postamble {
+    color: #aa2133;
+    background: #ffffff;
+    text-align: center;
+    font-family: Helvetica;
+}
+
+#sidebar {
+    color: #ffffff;
+    background: #aa2133;
+}
+
+#sidebar h2 {
+    color: #ffffff;
+    background-color: #0e0e0e;
+    text-decoration: none;
+}
+
+#sidebar a {
+    color: #ffffff;
+}
+
+#sidebar a:hover {
+    background-color: #0e0e0e;
+    color: #ffffff;
+}
+
+```
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Introduction
+
+In this document, we will compute Pearson, Spearman, and Kendall correlations using real data. We will also illustrate the results with scatter plots using ggplot2.
+
+Load Required Libraries
+```{r}
+# Load necessary libraries
+library(ggplot2)
+library(datasets)
+```
+
+# Load the Data
+
+We will use the mtcars dataset, which is included in the datasets package in R. This dataset contains information about various car models.
+
+```{r}
+# Load the mtcars dataset
+data("mtcars")
+
+# Display the first few rows of the dataset
+head(mtcars)
+```
+
+# Scatter Plot
+
+First of all, plot the data! We will create a scatter plot of mpg vs wt using ggplot2 to visualize the relationship between these variables.
+
+```{r}
+# Create scatter plot
+ggplot(mtcars, aes(x = wt, y = mpg)) +
+  geom_point() +
+  geom_smooth(method = "lm", col = "blue") +
+  labs(title = "Scatter Plot of MPG vs Weight",
+       x = "Weight (1000 lbs)",
+       y = "Miles per Gallon (MPG)") +
+  theme_minimal()
+```
+
+
+
+# Compute Correlations
+
+We will compute the correlations between the mpg (miles per gallon) and wt (weight) variables.
+
+# Pearson Correlation
+
+The Pearson correlation measures the linear relationship between two variables.
+
+```{r}
+# Compute Pearson correlation
+pearson_cor <- cor(mtcars$mpg, mtcars$wt, method = "pearson")
+
+cat("Pearson Correlation:\n")
+print(pearson_cor)
+```
+
+# Spearman Correlation
+
+The Spearman correlation measures the monotonic relationship between two variables.
+
+```{r}
+# Compute Spearman correlation
+spearman_cor <- cor(mtcars$mpg, mtcars$wt, method = "spearman")
+
+cat("Spearman Correlation:\n")
+print(spearman_cor)
+```
+
+# Kendall Correlation
+
+The Kendall correlation measures the ordinal association between two variables.
+
+```{r}
+# Compute Kendall correlation
+kendall_cor <- cor(mtcars$mpg, mtcars$wt, method = "kendall")
+
+cat("Kendall Correlation:\n")
+print(kendall_cor)
+```
+
+# Exercises
+
+## Exercise 1: Pearson Correlation
+
+Calculate the Pearson correlation coefficient between `mpg` (miles per gallon) and `hp` (horsepower) in the `mtcars` dataset. Display the result.
+
+<details>
+<summary>Show Solution</summary>
+
+```{r}
+# Solution
+pearson_corr <- cor(mtcars$mpg, mtcars$hp, method = "pearson")
+pearson_corr
+```
+</details>
+
+## Exercise 2: Spearman Correlation
+Calculate the Spearman correlation coefficient between mpg and wt (weight) in the mtcars dataset. Display the result.
+
+<details>
+<summary>Show Solution</summary>
+
+```{r}
+# Solution
+spearman_corr <- cor(mtcars$mpg, mtcars$wt, method = "spearman")
+spearman_corr
+```
+</details>
+
+## Exercise 3: Kendall Correlation
+
+Calculate the Kendall correlation coefficient between mpg and qsec (1/4 mile time) in the mtcars dataset. Display the result.
+
+<details>
+<summary>Show Solution</summary>
+
+```{r}
+# Solution
+kendall_corr <- cor(mtcars$mpg, mtcars$qsec, method = "kendall")
+kendall_corr
+```
+
+</details>
+
+## Exercise 4: Scatter Plot with Correlation Line
+
+Create a scatter plot of mpg vs hp with a Pearson correlation line using ggplot2.
+
+<details>
+<summary>Show Solution</summary>
+```{r}
+
+# Solution
+ggplot(mtcars, aes(x = hp, y = mpg)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE) +
+  labs(title = "Scatter Plot of MPG vs HP with Pearson Correlation Line")
+```
+</details>
+
+# Conclusion
+
+In this document, we computed Pearson, Spearman, and Kendall correlations using the mtcars dataset. We also illustrated the relationship between mpg and wt with a scatter plot using ggplot2. These correlations provide different perspectives on the relationship between the variables, whether it is linear, monotonic, or ordinal.

@@ -1,0 +1,226 @@
+---
+title: "Contingency Tables"
+author: "Angel Rubio"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  rmdformats::readthedown
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+```{css, echo=FALSE}
+/*
+Format
+*/
+
+#postamble::before {
+  content: "";
+  display: block;
+  height: 100px;
+  margin: 0em 0px 30px 0px;
+  background-image: url("https://img.gothru.org/4722/17631445273227275727/overlay/assets/20201012135643.7TCZAJ.jpg?save=optimize");
+  background-size: contain;
+  background-position: center center;
+  background-repeat: no-repeat;
+}
+
+h1.title{
+    font-size: 40pt;
+}
+
+h1{
+    font-size: 25pt;
+}
+
+h2{
+    font-size: 20pt;
+    text-decoration: underline solid;
+}
+
+h3{
+    font-size: 15pt;
+    font-style: italic;
+}
+
+h1,h2,h3{
+    font-family: Helvetica;
+    color: #aa2133;
+}
+
+h3,h4,h5,h6,legend{
+    font-family: Helvetica;
+    color: #0e0e0e;
+}
+
+
+#postamble {
+    color: #aa2133;
+    background: #ffffff;
+    text-align: center;
+    font-family: Helvetica;
+}
+
+#sidebar {
+    color: #ffffff;
+    background: #aa2133;
+}
+
+#sidebar h2 {
+    color: #ffffff;
+    background-color: #0e0e0e;
+    text-decoration: none;
+}
+
+#sidebar a {
+    color: #ffffff;
+}
+
+#sidebar a:hover {
+    background-color: #0e0e0e;
+    color: #ffffff;
+}
+
+```
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Chi-square Test
+Let's start by creating a 2x2 contingency table and performing a Chi-square test.
+
+```{r}
+# Create a 2x2 contingency table
+data <- matrix(c(10, 20, 30, 40), nrow = 2, byrow = TRUE)
+colnames(data) <- c("Outcome1", "Outcome2")
+rownames(data) <- c("Group1", "Group2")
+data <- as.table(data)
+
+# Perform Chi-square test
+chi_square_test <- chisq.test(data)
+
+cat("Chi-square Test Results:\n")
+print(chi_square_test)
+```
+
+# Fisher's Exact Test
+
+Next, we'll perform Fisher's Exact Test on the same 2x2 contingency table.
+
+```{r}
+# Perform Fisher's Exact Test
+fisher_test <- fisher.test(data)
+
+cat("Fisher's Exact Test Results:\n")
+print(fisher_test)
+
+``` 
+
+# Logistic Regression
+
+Finally, we'll perform logistic regression on the same data.
+
+```{r}
+# Convert the table to a data frame for logistic regression
+df <- as.data.frame(data)
+df <- df[rep(1:nrow(df), df$Freq), -3]  # Repeat rows by frequency and remove the Freq column
+
+# Create a binary outcome variable
+df$Outcome <- rep(c(0, 1), each = 2)
+
+# Create a binary predictor variable
+df$Group <- rep(c(0, 1), times = 2)
+
+# Perform logistic regression
+logistic_model <- glm(Outcome ~ Group, data = df, family = binomial)
+
+cat("Logistic Regression Results:\n")
+summary(logistic_model)
+```
+
+
+# Exercises
+
+## Exercise 1: Chi-square Test on New Data
+
+Create a 3x3 contingency table with the following data:
+
+10, 20, 30
+15, 25, 35
+40, 50, 60
+
+Perform a Chi-square test on this new table. Display the results.
+
+<details>
+<summary>Show Solution</summary>
+```{r}
+
+# Create a 3x3 contingency table
+new_data <- matrix(c(10, 20, 30,
+                     15, 25, 35,
+                     40, 50, 60), nrow = 3, byrow = TRUE)
+colnames(new_data) <- c("Outcome1", "Outcome2", "Outcome3")
+rownames(new_data) <- c("Group1", "Group2", "Group3")
+new_data <- as.table(new_data)
+
+# Perform Chi-square test
+new_chi_square_test <- chisq.test(new_data)
+
+cat("Chi-square Test Results on new data:\n")
+print(new_chi_square_test)
+```
+</details>
+
+## Exercise 2: Fisher's Exact Test on Different Data
+
+Create a new 2x2 contingency table with the following data:
+
+5, 10
+15, 20
+
+Perform Fisher's Exact Test on this table. Display the results.
+
+<details>
+<summary>Show Solution</summary>
+```{r}
+
+# Create a new 2x2 contingency table
+new_fisher_data <- matrix(c(5, 10,
+                            15, 20), nrow = 2, byrow = TRUE)
+colnames(new_fisher_data) <- c("Outcome1", "Outcome2")
+rownames(new_fisher_data) <- c("Group1", "Group2")
+new_fisher_data <- as.table(new_fisher_data)
+
+# Perform Fisher's Exact Test
+new_fisher_test <- fisher.test(new_fisher_data)
+
+cat("Fisher's Exact Test Results on new data:\n")
+print(new_fisher_test)
+```
+
+</details>
+
+## Exercise 3: Logistic Regression with Additional Variable
+
+Generate a dataset with an additional predictor variable. Fit a logistic regression model including this new variable. Summarize the model.
+
+<details>
+<summary>Show Solution</summary>
+```{r}
+
+# Generate sample data with additional predictor
+set.seed(456)
+n <- 100
+group <- factor(sample(c("Group1", "Group2"), n, replace = TRUE))
+predictor <- rnorm(n)
+outcome <- rbinom(n, 1, plogis(0.5 * (group == "Group2") + 0.3 * predictor))
+logistic_data_new <- data.frame(group, predictor, outcome)
+
+# Fit logistic regression model
+logistic_model_new <- glm(outcome ~ group + predictor, family = binomial, data = logistic_data_new)
+
+cat("Logistic Regression Summary with additional predictor:\n")
+summary(logistic_model_new)
+```
+</details>

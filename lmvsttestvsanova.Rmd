@@ -1,0 +1,192 @@
+---
+title: "Linear Models vs t.test vs ANOCA type I"
+author: "Angel Rubio"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  rmdformats::readthedown
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+```{css, echo=FALSE}
+/*
+Format
+*/
+
+#postamble::before {
+  content: "";
+  display: block;
+  height: 100px;
+  margin: 0em 0px 30px 0px;
+  background-image: url("https://img.gothru.org/4722/17631445273227275727/overlay/assets/20201012135643.7TCZAJ.jpg?save=optimize");
+  background-size: contain;
+  background-position: center center;
+  background-repeat: no-repeat;
+}
+
+h1.title{
+    font-size: 40pt;
+}
+
+h1{
+    font-size: 25pt;
+}
+
+h2{
+    font-size: 20pt;
+    text-decoration: underline solid;
+}
+
+h3{
+    font-size: 15pt;
+    font-style: italic;
+}
+
+h1,h2,h3{
+    font-family: Helvetica;
+    color: #aa2133;
+}
+
+h3,h4,h5,h6,legend{
+    font-family: Helvetica;
+    color: #0e0e0e;
+}
+
+
+#postamble {
+    color: #aa2133;
+    background: #ffffff;
+    text-align: center;
+    font-family: Helvetica;
+}
+
+#sidebar {
+    color: #ffffff;
+    background: #aa2133;
+}
+
+#sidebar h2 {
+    color: #ffffff;
+    background-color: #0e0e0e;
+    text-decoration: none;
+}
+
+#sidebar a {
+    color: #ffffff;
+}
+
+#sidebar a:hover {
+    background-color: #0e0e0e;
+    color: #ffffff;
+}
+
+```
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Introduction
+
+In this document, we will illustrate how a t-test (assuming equal variance) and an ANOVA Type I test can be solved using linear models. We will compute the p-values using both methods and show that they are exactly equal, explaining that the p-values are identical because the underlying hypotheses are the same.
+
+# Load Required Libraries
+```{r}
+# Load necessary libraries
+library(ggplot2)
+```
+
+We will generate some sample data for our analysis.
+
+```{r}
+# Generate sample data
+set.seed(123)
+group1 <- rnorm(30, mean = 50, sd = 5)
+group2 <- rnorm(30, mean = 55, sd = 5)
+
+# Combine data into a data frame
+data <- data.frame(
+  response = c(group1, group2),
+  group = factor(rep(c("Group1", "Group2"), each = 30))
+)
+
+# Display the first few rows of the dataset
+head(data)
+```
+
+# t-test Assuming Equal Variance
+
+We will perform a t-test assuming equal variance between the two groups.
+
+```{r}
+# Perform t-test assuming equal variance
+t_test <- t.test(response ~ group, data = data, var.equal = TRUE)
+
+cat("t-test Results:\n")
+print(t_test)
+```
+
+# t-test Using Linear Model
+
+We can also perform the t-test using a linear model.
+
+```{r}
+# Fit linear model
+lm_model <- lm(response ~ group, data = data)
+
+# Perform ANOVA on the linear model
+anova_lm <- anova(lm_model)
+
+cat("ANOVA Results from Linear Model (t-test equivalent):\n")
+print(anova_lm)
+```
+
+# ANOVA Type I Test
+
+We will perform an ANOVA Type I test using the aov function.
+
+```{r}
+# Perform ANOVA Type I test using aov
+anova_model <- aov(response ~ group, data = data)
+
+cat("ANOVA Type I Test Results using aov:\n")
+summary(anova_model)
+```
+
+# ANOVA Type I Test Using Linear Model
+
+We can also perform the ANOVA Type I test using a linear model.
+
+```{r}
+# Perform ANOVA Type I test using linear model
+anova_model_lm <- lm(response ~ group, data = data)
+anova_results <- anova(anova_model_lm)
+
+cat("ANOVA Type I Test Results using Linear Model:\n")
+print(anova_results)
+```
+
+# Comparison of p-values
+
+We will compare the p-values obtained from the t-test and ANOVA Type I test using linear models.
+
+```{r}
+# Extract p-values
+p_value_t_test <- t_test$p.value
+p_value_anova <- anova_lm$`Pr(>F)`[1]
+
+cat("p-value from t-test: ", p_value_t_test, "\n")
+cat("p-value from ANOVA (linear model): ", p_value_anova, "\n")
+
+# Check if p-values are identical
+identical(p_value_t_test, p_value_anova)
+```
+
+# Explanation
+
+The p-values obtained from the t-test and ANOVA Type I test using linear models are identical because the underlying hypotheses are the same. Both tests are essentially comparing the means of two groups to determine if they are significantly different. The t-test does this directly, while the ANOVA Type I test does this by comparing the variance explained by the group factor to the residual variance.
+
+# Conclusion
+
+In this document, we demonstrated how a t-test (assuming equal variance) and an ANOVA Type I test can be solved using linear models. We computed the p-values using both methods and showed that they are exactly equal, explaining that the p-values are identical because the underlying hypotheses are the same.

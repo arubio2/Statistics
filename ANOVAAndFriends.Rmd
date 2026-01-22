@@ -1,0 +1,199 @@
+---
+title: "ANOVA type I and its friends"
+author: "Angel Rubio"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  rmdformats::readthedown
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+```{css, echo=FALSE}
+/*
+Format
+*/
+
+#postamble::before {
+  content: "";
+  display: block;
+  height: 100px;
+  margin: 0em 0px 30px 0px;
+  background-image: url("https://img.gothru.org/4722/17631445273227275727/overlay/assets/20201012135643.7TCZAJ.jpg?save=optimize");
+  background-size: contain;
+  background-position: center center;
+  background-repeat: no-repeat;
+}
+
+h1.title{
+    font-size: 40pt;
+}
+
+h1{
+    font-size: 25pt;
+}
+
+h2{
+    font-size: 20pt;
+    text-decoration: underline solid;
+}
+
+h3{
+    font-size: 15pt;
+    font-style: italic;
+}
+
+h1,h2,h3{
+    font-family: Helvetica;
+    color: #aa2133;
+}
+
+h3,h4,h5,h6,legend{
+    font-family: Helvetica;
+    color: #0e0e0e;
+}
+
+
+#postamble {
+    color: #aa2133;
+    background: #ffffff;
+    text-align: center;
+    font-family: Helvetica;
+}
+
+#sidebar {
+    color: #ffffff;
+    background: #aa2133;
+}
+
+#sidebar h2 {
+    color: #ffffff;
+    background-color: #0e0e0e;
+    text-decoration: none;
+}
+
+#sidebar a {
+    color: #ffffff;
+}
+
+#sidebar a:hover {
+    background-color: #0e0e0e;
+    color: #ffffff;
+}
+
+```
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# ANOVA Type I Test
+
+Let's start by generating some sample data and performing an ANOVA Type I test using aov.
+
+```{r}
+# Generate sample data
+set.seed(123)
+group <- factor(rep(1:3, each = 20))
+response <- c(rnorm(20, mean = 50, sd = 5),
+              rnorm(20, mean = 55, sd = 5),
+              rnorm(20, mean = 60, sd = 5))
+
+data <- data.frame(group, response)
+
+# Perform ANOVA Type I test using aov
+anova_model <- aov(response ~ group, data = data)
+
+cat("ANOVA Type I Test Results using aov:\n")
+summary(anova_model)
+```
+
+We can also perform the ANOVA Type I test using the anova function.
+
+```{r}
+# Perform ANOVA Type I test using anova
+anova_model_lm <- lm(response ~ group, data = data)
+anova_results <- anova(anova_model_lm)
+
+cat("ANOVA Type I Test Results using anova:\n")
+print(anova_results)
+```
+
+# Explanation of the Formula Interface in R
+
+In R, the formula interface is used to specify the model to be fitted. The general form of a formula is response ~ predictors. Here, response is the dependent variable, and predictors are the independent variables. The ~ symbol separates the response from the predictors.
+
+For example, in the formula response ~ group, response is the dependent variable, and group is the independent variable. This formula specifies that we want to model the response variable as a function of the group variable.
+
+# Exercises
+
+## Exercise 1: Performing ANOVA on New Data
+
+Generate a new dataset with 4 groups, where each group has 15 samples. Perform an ANOVA Type I test on this new dataset. Display the results.
+
+<details>
+<summary>Show Solution</summary>
+```{r}
+# Generate new sample data
+set.seed(456)
+group_new <- factor(rep(1:4, each = 15))
+response_new <- c(rnorm(15, mean = 50, sd = 5),
+                  rnorm(15, mean = 55, sd = 5),
+                  rnorm(15, mean = 60, sd = 5),
+                  rnorm(15, mean = 65, sd = 5))
+
+data_new <- data.frame(group_new, response_new)
+
+# Perform ANOVA Type I test using aov
+anova_model_new <- aov(response_new ~ group_new, data = data_new)
+
+cat("ANOVA Type I Test Results using aov on new data:\n")
+summary(anova_model_new)
+```
+
+</details>
+
+## Exercise 2: Visualizing the Data
+
+Create a boxplot to visualize the distribution of responses across the different groups in the new dataset generated in Exercise 1.
+
+<details>
+<summary>Show Solution</summary>
+
+```{r}
+# Boxplot of the new data
+boxplot(response_new ~ group_new, data = data_new,
+        main = "Boxplot of Responses by Group",
+        xlab = "Group", ylab = "Response",
+        col = "lightblue")
+```
+
+</details>
+## Exercise 3: ANOVA Assumptions
+
+Discuss the assumptions of ANOVA. Generate diagnostic plots (residuals vs fitted, Q-Q plot) to check these assumptions for the original dataset.
+
+<details>
+<summary>Show Solution</summary>
+``` {r}
+
+# Diagnostic plots for the original data
+par(mfrow = c(2, 2))
+plot(anova_model)
+
+```
+
+# Kruskal-Wallis Test
+The Kruskal-Wallis test is a non-parametric alternative to ANOVA. It does not assume that the data are normally distributed.
+
+```{r}
+# Perform Kruskal-Wallis test
+kruskal_test <- kruskal.test(response ~ group, data = data)
+
+cat("Kruskal-Wallis Test Results:\n")
+print(kruskal_test)
+```
+
+# Conclusion
+
+In this document, we have demonstrated how to perform an ANOVA Type I test using both aov and anova functions in R. We also explained the formula interface in R and performed a Kruskal-Wallis test as a non-parametric alternative to ANOVA. These techniques are useful for comparing means across multiple groups and understanding the relationships between variables.

@@ -1,0 +1,1762 @@
+---
+title: "Introduction to ggplot2"
+author: "Laura Jareño"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  rmdformats::readthedown
+---
+
+```{css, echo=FALSE}
+/*
+Format
+*/
+
+#postamble::before {
+  content: "";
+  display: block;
+  height: 100px;
+  margin: 0em 0px 30px 0px;
+  background-image: url("https://img.gothru.org/4722/17631445273227275727/overlay/assets/20201012135643.7TCZAJ.jpg?save=optimize");
+  background-size: contain;
+  background-position: center center;
+  background-repeat: no-repeat;
+}
+
+h1.title{
+    font-size: 40pt;
+}
+
+h1{
+    font-size: 25pt;
+}
+
+h2{
+    font-size: 20pt;
+    text-decoration: underline solid;
+}
+
+h3{
+    font-size: 15pt;
+    font-style: italic;
+}
+
+h1,h2,h3{
+    font-family: Helvetica;
+    color: #aa2133;
+}
+
+h3,h4,h5,h6,legend{
+    font-family: Helvetica;
+    color: #0e0e0e;
+}
+
+#postamble {
+    color: #aa2133;
+    background: #ffffff;
+    text-align: center;
+    font-family: Helvetica;
+}
+
+#sidebar {
+    color: #ffffff;
+    background: #aa2133;
+}
+
+#sidebar h2 {
+    color: #ffffff;
+    background-color: #0e0e0e;
+    text-decoration: none;
+}
+
+#sidebar a {
+    color: #ffffff;
+}
+
+#sidebar a:hover {
+    background-color: #0e0e0e;
+    color: #ffffff;
+}
+
+body {
+  text-align: justify;
+}
+
+```
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+# 1. Introduction
+
+`ggplot2` R library is an organised data visualisation system. The elements required to plot a graph with ggplot2 are as follows:
+
+* **Data frame**: Contains the data to be displayed.
+* Aesthetics: List of relationships between the variables in the data set and certain features of the graph (e.g. coordinates, shapes or colours).
+* `geoms`: Geometric elements (points, lines, circles, etc.) to be represented.  
+
+Usually these elements are added consecutively in different layers. The **+** sign is used to add a new layer. The general structure of the code to obtain a graphic is as follows:
+
+```{r, eval = FALSE}
+ggplot(data = 'name of the data set') +
+  geom_name1(aes(aesthetics1=var1, aesthetics2=var2, ...)) +
+  geom_name2(...) 
+```
+
+
+# 2. Instalation 
+
+```{r, message = FALSE, warning = FALSE, eval = FALSE}
+install.packages("ggplot2")
+```
+
+```{r, message = FALSE, warning = FALSE}
+library(ggplot2)
+```
+
+
+```{r, message = FALSE, warning = FALSE, echo = FALSE}
+library(dplyr)
+library(patchwork)
+```
+
+
+# 3. Data
+
+We will use one of the databases provided by ggplot2: `mpg`. It includes information about fuel economy of popular car models in 1999 and 2008, collected by the US Environmental Protection Agency. 
+
+```{r}
+data(mpg)
+head(mpg)
+```
+
+* **manufacturer**: Car manufacturer (15 manufacturers). 
+* **model**: Model name (38 models)
+* **displ**: Engine displacement in litres. 
+* **year**: Year (1999 or 2008). 
+* **cyl**: Number of cylinders (4, 5, 6 or 8)
+* **trans**: Type of transmission. 
+* **drv**: Drive type Frond wheel (f), rear wheel (r) or four wheel (4). 
+* **cty***: City mileage. 
+* **hwy**: Highway mileage.
+* **fl**: Fuel type (5 types). 
+* **class**: Vehicle class (7 types). 
+
+
+# 4. Types of graphs 
+
+Geometric objects, or geoms for short, perform the actual rendering of the layer, controlling the type of plot that you create. 
+
+## One variable
+
+### Discrete
+
+* `geom_bar()`: Display distribution of discrete variable.
+  
+#### `geom_bar` 
+
+Shows the distribution of categorical variables.
+
+```{r}
+ggplot(mpg, aes(manufacturer)) + 
+  geom_bar()
+
+```
+
+The other form of bar chart is used for presummarised data. For example, you might have three drugs with their average effect. To display this sort of data, you need to tell geom_bar() to not run the default stat which bins and counts the data. `geom_bar(stat = "identity")` leaves the data unchanged.  
+
+```{r}
+drugs <- data.frame(
+  drug = c("a", "b", "c"),
+  effect = c(4.2, 9.7, 6.1)
+)
+
+ggplot(drugs, aes(drug, effect)) + geom_bar(stat = "identity")
+```
+
+By default, multiple bars in the same location will be stacked on top of one another. However, using the argument `position='dodge'` bars will be placed side by side. 
+
+```{r, message= FALSE, warning = FALSE, eval = FALSE}
+ggplot(mpg) + 
+  geom_bar(aes(x = as.character(year), fill = drv)) + 
+  labs(x = "year")
+
+ggplot(mpg) + 
+  geom_bar(aes(x = as.character(year), fill = drv), position = "dodge") + 
+  labs(x = "year")
+```
+
+```{r, echo = FALSE, message = FALSE, warning = FALSE}
+p1 <- ggplot(mpg) + 
+  geom_bar(aes(x = as.character(year), fill = drv)) + 
+  labs(x = "year")
+
+p2 <- ggplot(mpg) + 
+  geom_bar(aes(x = as.character(year), fill = drv), position = "dodge") + 
+  labs(x = "year")
+
+combined <- p1 + p2
+combined
+```
+
+  
+### Continuous
+
+  * `geom_histogram()`: Bin and count continuous variable, display with bars.
+  * `geom_density()`: Smoothed density estimate.
+  * `geom_dotplot()`: Stack individual points into a dot plot.
+  * `geom_freqpoly()`: Bin and count continuous variable, display with lines.
+
+#### `geom_histogram` / `geom_freqpoly`
+
+Both histograms and frequency polygons show the distribution of continuous variables. They bin the data and then count the number of observations in each bin. They provide more information about the distribution of a single group than boxplots do, at the expense of needing more space. The only difference is the display as histograms use bars and frequency polygons use lines.
+
+```{r, message = FALSE, warning = FALSE, eval = FALSE}
+ggplot(mpg, aes(hwy)) + geom_histogram()
+
+ggplot(mpg, aes(hwy)) + geom_freqpoly()
+
+```
+
+```{r, message = FALSE, warning = FALSE, echo = FALSE}
+p1 <- ggplot(mpg, aes(hwy)) + geom_histogram()
+p2 <- ggplot(mpg, aes(hwy)) + geom_freqpoly()
+combined <- p1 + p2
+combined
+```
+
+You can control the width of the bins with the `binwidth` argument (if you don’t want evenly spaced bins you can use the breaks argument). It is very important to experiment with the bin width. The default just splits your data into 30 bins, which is unlikely to be the best choice. You should always try many bin widths, and you may find you need multiple bin widths to tell the full story of your data.
+
+```{r, message = FALSE, warning = FALSE, eval = FALSE}
+ggplot(mpg, aes(hwy)) + 
+  geom_histogram()
+
+ggplot(mpg, aes(hwy)) + 
+  geom_histogram(binwidth = 10)
+```
+
+```{r, message = FALSE, warning = FALSE, eval = FALSE}
+ggplot(mpg, aes(hwy)) + 
+  geom_freqpoly(binwidth = 2.5)
+
+ggplot(mpg, aes(hwy)) + 
+  geom_freqpoly(binwidth = 1)
+```
+
+```{r, message = FALSE, warning = FALSE, echo = FALSE}
+p1 <- ggplot(mpg, aes(hwy)) + 
+  geom_histogram()
+
+p2 <- ggplot(mpg, aes(hwy)) + 
+  geom_histogram(binwidth = 3)
+
+p3 <- ggplot(mpg, aes(hwy)) + 
+  geom_freqpoly(binwidth = 2.5)
+
+p4 <- ggplot(mpg, aes(hwy)) + 
+  geom_freqpoly(binwidth = 1)
+
+combined <- p1 + p2 + p3 + p4
+combined
+```
+
+
+## Two variables
+
+### Both continuous
+
+* `geom_point()`: Scatterplot.
+* `geom_quantile()`: Smoothed quantile regression.
+* `geom_rug()`: Marginal rug plots.
+* `geom_smooth()`: Smoothed line of best fit.
+* `geom_text()`: Text labels.
+  
+#### `geom_point` 
+
+`geom_point()` produces a scatterplot.
+
+```{r, fig.width=4, fig.height=3, fig.align='center', out.width='50%'}
+ggplot(mpg, aes(x = displ, y = hwy)) + 
+  geom_point()
+```
+
+The plot shows a strong correlation: as the engine size gets bigger, the fuel economy gets worse. There are also some interesting outliers: some cars with large engines get higher fuel economy than average. 
+
+
+```{r, message = FALSE, warning = FALSE, eval = FALSE}
+ggplot(mpg, aes(displ, hwy, colour = class)) + 
+  geom_point()
+
+ggplot(mpg, aes(displ, hwy, colour = factor(cyl))) +
+  geom_point()
+```
+
+
+```{r, echo = FALSE, message = FALSE, warning = FALSE}
+p1 <- ggplot(mpg, aes(displ, hwy, colour = class)) + 
+  geom_point()
+
+p2 <- ggplot(mpg, aes(displ, hwy, colour = factor(cyl))) +
+  geom_point()
+
+combined <- p1 + p2
+combined
+```
+
+
+#### `geom_smooth`
+
+Fits a smoother to the data and displays the smooth and its standard error. If you have a scatterplot with a lot of noise, it can be hard to see the dominant pattern. In this case it’s useful to add a smoothed line to the plot with `geom_smooth()`:
+
+```{r, warning= FALSE, message = FALSE}
+ggplot(mpg, aes(displ, hwy)) + 
+  geom_point() + 
+  geom_smooth()
+```
+
+An important argument to geom_smooth() is the method, which allows you to choose which type of model is used to fit the smooth curve:
+
+* `method = 'loess'`: The default for small n, uses a smooth local regression (as described in ?loess). The wiggliness of the line is controlled by the span parameter, which ranges from 0 (exceedingly wiggly) to 1 (not so wiggly). Loess does not work well for large datasets, so an alternative smoothing algorithm is used when n is greater than 1,000.
+* `method = 'gam'`: fits a generalised additive model provided by the `mgcv` package. You need to first load `mgcv`, then use a formula like `formula = y ~ s(x)` or `y ~ s(x, bs = "cs")` (for large data). This is what ggplot2 uses when there are more than 1,000 points.
+* `method = 'lm'`: fits a linear model, giving the line of best fit.
+* `method = 'rlm'`: works like lm(), but uses a robust fitting algorithm so that outliers don’t affect the fit as much. It’s part of the `MASS` package, so remember to load that first.
+
+
+```{r, warning= FALSE, message = FALSE, eval = FALSE}
+
+# method = 'loess'
+ggplot(mpg, aes(displ, hwy)) + 
+  geom_point() + 
+  geom_smooth()
+
+# method = 'gam'
+library(mgcv)
+ggplot(mpg, aes(displ, hwy)) + 
+  geom_point() + 
+  geom_smooth(method = "gam", formula = y ~ s(x))
+
+# method = 'lm'
+ggplot(mpg, aes(displ, hwy)) + 
+  geom_point() + 
+  geom_smooth(method = "lm")
+```
+
+
+```{r, warning= FALSE, message = FALSE, echo = FALSE}
+
+# method = 'loess'
+p1 <- ggplot(mpg, aes(displ, hwy)) + 
+  geom_point() + 
+  geom_smooth() + ggtitle("loess")
+
+# method = 'gam'
+library(mgcv)
+p2 <- ggplot(mpg, aes(displ, hwy)) + 
+  geom_point() + 
+  geom_smooth(method = "gam", formula = y ~ s(x)) + ggtitle("gam")
+
+# method = 'lm'
+p3 <- ggplot(mpg, aes(displ, hwy)) + 
+  geom_point() + 
+  geom_smooth(method = "lm") + ggtitle("lm")
+
+combined <- p1 + p2 + p3
+combined
+```
+
+
+### Show distribution
+
+* `geom_bin2d()`: Bin into rectangles and count.
+* `geom_density2d()`: Smoothed 2d density estimate.
+* `geom_hex()`: Bin into hexagons and count.
+
+### At least one discrete
+
+* `geom_count()`: Count number of point at distinct locations.
+* `geom_jitter()`: Randomly jitter overlapping points.
+
+#### `geom_jitter`
+
+Jittered plots show every point but only work with relatively small datasets. 
+ 
+```{r}
+ggplot(mpg, aes(drv, hwy)) + geom_jitter()
+```
+
+
+### One continuous, one discrete
+
+* `geom_bar(stat = "identity")`: Bar chart of precomputed summaries.
+* `geom_boxplot()`: Boxplots.
+* `geom_violin()`: Show density of values in each group.
+
+
+#### `geom_boxplot`
+
+When a set of data includes a categorical variable and one or more continuous variables, you will probably be interested to know how the values of the continuous variables vary with the levels of the categorical variable. 
+
+```{r, warning = FALSE, message = FALSE, eval = FALSE}
+ggplot(mpg, aes(drv, hwy)) + geom_boxplot()
+```
+
+```{r, warning = FALSE, message = FALSE, eval = FALSE}
+ggplot(mpg, aes(drv, hwy, fill = factor(year))) + geom_boxplot()
+```
+
+```{r, warning = FALSE, message = FALSE, echo = FALSE}
+
+p1 <- ggplot(mpg, aes(drv, hwy)) + geom_boxplot()
+p2 <- ggplot(mpg, aes(drv, hwy, fill = factor(year))) + geom_boxplot()
+
+combined <- p1 + p2
+combined
+```
+
+
+#### `geom_violin`
+
+Violin plots give the richest display, but rely on the calculation of a density estimate, which can be hard to interpret.
+
+```{r}
+ggplot(mpg, aes(drv, hwy)) + geom_violin()
+```
+
+
+### One time, one continuous
+
+* `geom_area()`: Area plot.
+* `geom_line()`: Line plot.
+* `geom_step()`: Step plot.
+
+#### `geom_line`
+
+Draw lines between the data points and are typically used to explore how things change over time. A line plot is constrained to produce lines that travel from left to right, while paths can go in any direction. 
+
+Because the year variable in the `mpg` dataset only has two values, we’ll show some time series plots using the `economics` dataset, which contains economic data on the US measured over the last 40 years. The figure shows the unemployment rate. 
+
+```{r}
+ggplot(economics, aes(date, unemploy / pop)) +
+  geom_line()
+```
+
+
+### Display uncertainty
+
+* `geom_crossbar()`: Vertical bar with center.
+* `geom_errorbar()`: Error bars.
+* `geom_linerange()`: Vertical line.
+* `geom_pointrange()`: Vertical line with center.
+
+
+## Graphical primitives
+
+* `geom_blank()`: Display nothing. Most useful for adjusting axes limits using data.
+* `geom_point()`: Points.
+* `geom_path()`: Paths.
+* `geom_ribbon()`: Ribbons, a path with vertical thickness.
+* `geom_segment()`: A line segment, specified by start and end position.
+* `geom_rect()`: Rectangles.
+* `geom_polygon()`: Filled polygons.
+* `geom_text()`: Text.
+
+### Spatial
+
+* `geom_map()`: Fast version of geom_polygon() for map data.
+
+## Three variables
+
+* `geom_contour()`: Contours.
+* `geom_tile()`: Tile the plane with rectangles.
+* `geom_raster()`: Fast version of geom_tile() for equal sized tiles.
+
+
+# 5. Labels
+
+## Plot title and axes names
+
+There are, among others, two ways to name both title and axes:
+
+* `labs`: Axis names and plot title names are entered within the function. 
+* Independent functions: `xlab`, `ylab`, `ggtitle`
+
+```{r, message = FALSE, warning = FALSE, eval = FALSE}
+ggplot(mpg, aes(displ, hwy)) + 
+  geom_point(aes(colour = factor(cyl))) + 
+  labs(
+    x = "Engine displacement (litres)", 
+    y = "Highway miles per gallon", 
+    colour = "Number of cylinders",
+    title = "Mileage by engine size and cylinders",
+    subtitle = "Source: https://fueleconomy.gov"
+  )
+```
+
+```{r, message = FALSE, warning = FALSE, eval = FALSE}
+ggplot(mpg, aes(displ, hwy)) + 
+  geom_point(aes(colour = factor(cyl))) + 
+  xlab('Engine displacement (litres)') +
+  ylab("Highway miles per gallon") + 
+  ggtitle("Mileage by engine size and cylinders") + 
+  scale_color_discrete(name = 'Number of cylinders')
+```
+
+```{r, message = FALSE, warning = FALSE, echo = FALSE}
+p1 <- ggplot(mpg, aes(displ, hwy)) + 
+  geom_point(aes(colour = factor(cyl))) + 
+  labs(
+    x = "Engine displacement (litres)", 
+    y = "Highway miles per gallon", 
+    colour = "Number of cylinders",
+    title = "Mileage by engine size and cylinders",
+    subtitle = "Source: https://fueleconomy.gov"
+  )
+
+p2 <- ggplot(mpg, aes(displ, hwy)) + 
+  geom_point(aes(colour = factor(cyl))) + 
+  xlab('Engine displacement (litres)') +
+  ylab("Highway miles per gallon") + 
+  ggtitle("Mileage by engine size and cylinders") + 
+  scale_color_discrete(name = 'Number of cylinders')
+
+combine <- p1 + p2
+combine
+```
+
+In the same way that names are given, they can be removed. There are two ways to remove the axis label. Setting labs(x = ““) omits the label but still allocates space; setting labs(x = NULL) removes the label and its space.
+
+```{r}
+ggplot(mpg, aes(cty, hwy)) +
+  geom_point(alpha = 1 / 3) + 
+  xlab(NULL) + 
+  ylab(NULL)
+```
+
+You can also supply mathematical expressions wrapped in quote(). The rules by which these expressions are interpreted can be found by typing `?plotmath`.
+
+```{r}
+values <- seq(from = -2, to = 2, by = .01)
+df <- data.frame(x = values, y = values ^ 3)
+ggplot(df, aes(x, y)) + 
+  geom_path() + 
+  labs(y = quote(f(x) == x^3))
+```
+
+It is also possible to include (some) markdown in axis and legend titles with the help of the `ggtext` package and the ggplot2 theme system. To enable markdown you need to set the relevant theme element to `ggtext::element_markdown()`. 
+
+```{r}
+df <- data.frame(x = 1:3, y = 1:3)
+ggplot(df, aes(x, y)) + 
+  geom_point() + 
+  labs(x = "Axis title with *italics* and **boldface**") + theme(axis.title.x = ggtext::element_markdown())
+```
+
+Often you don’t need to set the labels manually, and can instead specify a labelling function in the same way you can for breaks. A function passed to labels should accept a numeric vector of breaks as input and return a character vector of labels (the same length as the input). Again, the scales package provides a number of tools that will automatically construct label functions for you. Some of the more useful examples for numeric data include:
+
+* `scales::label_bytes()`: Formats numbers as kilobytes, megabytes etc.
+* `scales::label_comma()`: Formats numbers as decimals with commas added.
+* `scales::label_dollar()`: Formats numbers as currency.
+* `scales::label_ordinal()`: Formats numbers in rank order: 1st, 2nd, 3rd etc.
+* `scales::label_percent()`: Formats numbers as percentages.
+* `scales::label_pvalue()`: Formats numbers as p-values: <.05, <.01, .34, etc.
+
+
+### Label positions
+
+When plotting categorical data it is often necessary to move the axis labels in some way to prevent them from overlapping. 
+
+```{r, message = FALSE, warning = FALSE, eval = FALSE}
+ggplot(mpg, aes(manufacturer, hwy)) + geom_boxplot() 
+
+ggplot(mpg, aes(manufacturer, hwy)) + geom_boxplot() + guides(x = guide_axis(n.dodge = 3))
+ggplot(mpg, aes(manufacturer, hwy)) + scale_x_discrete(guide = guide_axis(n.dodge = 3))
+
+ggplot(mpg, aes(manufacturer, hwy)) + geom_boxplot() + guides(x = guide_axis(angle = 90))
+ggplot(mpg, aes(manufacturer, hwy)) + geom_boxplot() + scale_x_discrete(guide = guide_axis(angle = 90))
+
+```
+
+```{r, message = FALSE, warning = FALSE, echo = FALSE}
+
+p1 <- ggplot(mpg, aes(manufacturer, hwy)) + geom_boxplot() 
+
+p2 <- ggplot(mpg, aes(manufacturer, hwy)) + geom_boxplot() + guides(x = guide_axis(n.dodge = 3))
+#ggplot(mpg, aes(manufacturer, hwy)) + scale_x_discrete(guide = guide_axis(n.dodge = 3))
+
+p3 <- ggplot(mpg, aes(manufacturer, hwy)) + geom_boxplot() + guides(x = guide_axis(angle = 90))
+#ggplot(mpg, aes(manufacturer, hwy)) + geom_boxplot() + scale_x_discrete(guide = guide_axis(angle = 90))
+
+combined <- p1 + p2 + p3
+combined
+
+```
+
+
+# 6. Leyend
+
+Every scale is associated with a guide that displays the relationship between the aesthetic and the data. For position scales, the axes serve this function. For colour scales this role is played by the legend.
+
+To change the title of the legend you can use: 
+
+* `color`. `fill`, `shape` arguments of `labs` function. 
+* `name` argument of `scale_*_discrete` functions 
+
+The position and justification of legends are controlled by the `theme` setting `legend.position`, which takes values “right”, “left”, “top”, “bottom”, or “none” (no legend).
+
+```{r, message = FALSE, warning = FALSE, eval = FALSE}
+xxx + theme(legend.position = "left")
+xxx + theme(legend.position = "right") # the default 
+xxx + theme(legend.position = "bottom")
+xxx + theme(legend.position = "none")
+```
+
+
+```{r, message = FALSE, warning = FALSE, echo = FALSE}
+
+p1 <- ggplot(mpg, aes(factor(class), cty, fill = factor(year))) + geom_bar(stat = 'identity', position = 'dodge') + theme(legend.position = "left")
+
+p2 <- ggplot(mpg, aes(factor(class), cty, fill = factor(year))) + geom_bar(stat = 'identity', position = 'dodge') + theme(legend.position = "right") # the default 
+
+p3 <- ggplot(mpg, aes(factor(class), cty, fill = factor(year))) + geom_bar(stat = 'identity', position = 'dodge') + theme(legend.position = "bottom")
+
+p4 <- ggplot(mpg, aes(factor(class), cty, fill = factor(year))) + geom_bar(stat = 'identity', position = 'dodge') + theme(legend.position = "none")
+
+combine <- p1 + p2 + p3 + p4
+combine
+```
+
+Switching between left/right and top/bottom modifies how the keys in each legend are laid out (horizontal or vertically), and how multiple legends are stacked (horizontal or vertically). If needed, you can adjust those options independently:
+
+* `legend.direction`: Layout of items in legends (“horizontal” or “vertical”).
+* `legend.box`: Arrangement of multiple legends (“horizontal” or “vertical”).
+* `legend.box.just`: Justification of each legend within the overall bounding box, when there are multiple legends (“top”, “bottom”, “left”, or “right”).
+
+Alternatively, if there’s a lot of blank space in your plot you might want to place the legend inside the plot. You can do this by setting `legend.position` to a numeric vector of length two. The numbers represent a relative location in the panel area: c(0, 1) is the top-left corner and c(1, 0) is the bottom-right corner. You control which corner of the legend the `legend.position` refers to with `legend.justification`, which is specified in a similar way. Unfortunately positioning the legend exactly where you want it requires a lot of trial and error.
+
+```{r, message = FALSE, warning = FALSE, eval = FALSE}
+xxx + geom_bar(stat = 'identity', position = 'dodge') + theme(legend.position = c(0, 1), legend.justification = c(0, 1))
+xxx + geom_bar(stat = 'identity', position = 'dodge') + theme(legend.position = c(0.5, 0.5), legend.justification = c(0.5, 0.5))
+xxx + geom_bar(stat = 'identity', position = 'dodge') + theme(legend.position = c(1, 0), legend.justification = c(1, 0))
+
+```
+
+
+```{r, message = FALSE, warning = FALSE, echo = FALSE}
+
+p1 <- ggplot(mpg, aes(factor(class), cty, fill = factor(year))) + geom_bar(stat = 'identity', position = 'dodge') + theme(legend.position = c(0, 1), legend.justification = c(0, 1))
+
+p2 <- ggplot(mpg, aes(factor(class), cty, fill = factor(year))) + geom_bar(stat = 'identity', position = 'dodge') + theme(legend.position = c(0.5, 0.5), legend.justification = c(0.5, 0.5))
+
+p3 <- ggplot(mpg, aes(factor(class), cty, fill = factor(year))) + geom_bar(stat = 'identity', position = 'dodge') + theme(legend.position = c(1, 0), legend.justification = c(1, 0))
+
+combine <- p1 + p2 + p3
+combine
+
+
+``` 
+
+In the same way that you can choose where to put the legend, you can modify it and introduce it directly into the plot in a different way: 
+
+```{r, message = FALSE, warning = FALSE, eval = FALSE}
+ggplot(mpg, aes(displ, hwy, colour = class)) + 
+  geom_point(show.legend = FALSE) +
+  directlabels::geom_dl(aes(label = class), method = "smart.grid")
+
+ggplot(mpg, aes(displ, hwy)) +
+  geom_point() + 
+  ggforce::geom_mark_ellipse(aes(label = cyl, group = cyl))
+```
+
+
+```{r, message = FALSE, warning = FALSE, echo = FALSE}
+p1 <- ggplot(mpg, aes(displ, hwy, colour = class)) + 
+  geom_point(show.legend = FALSE) +
+  directlabels::geom_dl(aes(label = class), method = "smart.grid")
+
+p2 <- ggplot(mpg, aes(displ, hwy)) +
+  geom_point() + 
+  ggforce::geom_mark_ellipse(aes(label = cyl, group = cyl))
+
+p1 / p2 
+```
+
+
+For continuous colour scales, the default legend takes the form of a “colour bar” displaying a continuous gradient of colours:
+
+```{r}
+ggplot(mpg, aes(cyl, displ, colour = hwy)) +
+  geom_point(size = 2)
+```
+
+The appearance of the legend can be controlled using the `guide_colourbar()` function. There are many arguments to this function, allowing you to exercise precise control over the legend. The most important arguments are illustrated below:
+
+* `reverse`: Flips the colour bar to put the lowest values at the top.
+* `barwidth` and `barheight`: Allow to specify the size of the bar. These are grid units, e.g. unit(1, "cm").
+* `direction`: Specifies the direction of the guide, "horizontal" or "vertical".
+
+
+```{r, message = FALSE, warning = FALSE, eval = FALSE}
+xxx + guides(colour = guide_colourbar(reverse = TRUE))
+xxx + guides(colour = guide_colourbar(barheight = unit(2, "cm")))
+xxx + guides(colour = guide_colourbar(direction = "horizontal"))
+```
+
+```{r, message = FALSE, warning = FALSE, echo = FALSE}
+p1 <- ggplot(mpg, aes(cyl, displ, colour = hwy)) +
+  geom_point(size = 2) + guides(colour = guide_colourbar(reverse = TRUE))
+
+p2 <- ggplot(mpg, aes(cyl, displ, colour = hwy)) +
+  geom_point(size = 2) + guides(colour = guide_colourbar(barheight = unit(2, "cm")))
+
+p3 <- ggplot(mpg, aes(cyl, displ, colour = hwy)) +
+  geom_point(size = 2) + guides(colour = guide_colourbar(direction = "horizontal"))
+
+combine <- p1 + p2 + p3
+combine
+```
+
+
+Legends for discrete colour scales can be customised using the `guide` argument to the `scale` function or with the `guides()` helper function. For a discrete scale the default legend displays individual keys in a table, which can be customised using `guide_legend()`. The most useful options are:
+
+* `nrow` or `ncol`: Specifies the dimensions of the table. 
+* `byrow`: Controls how the table is filled: FALSE fills it by column (the default), TRUE fills it by row.
+* `reverse`: Reverses the order of the keys:
+* `override.aes`: Useful when you want the elements in the legend display differently to the geoms in the plot. This is often required when you’ve used transparency or size to deal with moderate overplotting and also used colour in the plot.
+* `keywidth` and `keyheight` (along with default.unit): Allow you to specify the size of the keys. These are grid units, e.g. unit(1, "cm").
+
+
+```{r, message = FALSE, warning = FALSE, eval = FALSE}
+xxx + guides(fill = guide_legend(ncol = 2))
+xxx + guides(fill = guide_legend(ncol = 2, byrow = TRUE))
+xxx + guides(fill = guide_legend(reverse = TRUE))
+xxx + guides(colour = guide_legend(override.aes = list(alpha = 1)))
+
+```
+
+```{r, message = FALSE, warning = FALSE, echo = FALSE}
+
+p1 <- ggplot(mpg, aes(drv, fill = factor(cyl))) + geom_bar() 
+
+p2 <- ggplot(mpg, aes(drv, fill = factor(cyl))) + geom_bar() + guides(fill = guide_legend(ncol = 2))
+p3 <- ggplot(mpg, aes(drv, fill = factor(cyl))) + geom_bar() + guides(fill = guide_legend(ncol = 2, byrow = TRUE))
+p4 <- ggplot(mpg, aes(drv, fill = factor(cyl))) + geom_bar() + guides(fill = guide_legend(reverse = TRUE))
+p5 <- ggplot(mpg, aes(drv, fill = factor(cyl))) + geom_bar() + guides(colour = guide_legend(override.aes = list(alpha = 1)))
+
+p1 / (p2 + p3) / (p4 + p5)
+
+```
+
+
+# 7. Limits
+
+The limits, breaks and labels for a discrete position scale can be set using the limits, breaks, and labels arguments. For the most part these behave identically to the corresponding arguments for numeric scales, though there are some differences. For example, the limits of a discrete scale are not defined in terms of endpoints, but instead correspond to the set of allowable values for that variable. Accordingly, ggplot2 expects that the limits of a discrete scale should be a character vector that enumerates all possible values in the order they should appear:
+
+```{r, message = FALSE, warning = FALSE, eval = FALSE}
+ggplot(mpg, aes(factor(class), cty)) + geom_bar(stat = 'identity')
+
+ggplot(mpg, aes(factor(class), cty)) + geom_bar(stat = 'identity') + 
+  scale_x_discrete(limits = c('compact', 'midsize', 'pickup', 'subcompact', 'suv', '2seater', 'minivan'))
+
+ggplot(mpg, aes(factor(class), cty)) + geom_bar(stat = 'identity') + 
+  ylim(0, 1500)
+
+ggplot(mpg, aes(factor(class), cty)) + geom_bar(stat = 'identity') + 
+  scale_y_continuous(breaks = c(0, 125, 250, 375, 500, 625, 750, 875))
+
+```
+
+
+```{r, message = FALSE, warning = FALSE, echo = FALSE}
+p1 <- ggplot(mpg, aes(factor(class), cty)) + geom_bar(stat = 'identity')
+
+p2 <- ggplot(mpg, aes(factor(class), cty)) + geom_bar(stat = 'identity') + 
+  scale_x_discrete(limits = c('compact', 'midsize', 'pickup', 'subcompact', 'suv', '2seater', 'minivan'))
+
+p3 <- ggplot(mpg, aes(factor(class), cty)) + geom_bar(stat = 'identity') + 
+  ylim(0, 1500)
+
+p4 <- ggplot(mpg, aes(factor(class), cty)) + geom_bar(stat = 'identity') + 
+  scale_y_continuous(breaks = c(0, 125, 250, 375, 500, 625, 750, 875))
+
+combine <- p1 + p2 + p3 + p4
+combine
+
+```
+
+When working with continuous data, the default is to map linearly from the data space onto the aesthetic space. It is possible to override this default using scale transformations, which alter the way in which this mapping takes place. In some cases you don’t need to dive into the details, because there are convenience functions like `scale_x_log10()`, `scale_x_reverse()` that can do the work for you:
+
+```{r, message = FALSE, warning = FALSE, eval = FALSE}
+ggplot(mpg, aes(displ, hwy)) + geom_point()
+
+ggplot(mpg, aes(displ, hwy)) + geom_point() + scale_x_reverse()
+ggplot(mpg, aes(displ, hwy)) + geom_point() + scale_y_reverse()
+
+```
+
+```{r, message = FALSE, warning = FALSE, echo = FALSE}
+p1 <- ggplot(mpg, aes(displ, hwy)) + geom_point()
+
+p2 <-ggplot(mpg, aes(displ, hwy)) + geom_point() + scale_x_reverse()
+p3 <- ggplot(mpg, aes(displ, hwy)) + geom_point() + scale_y_reverse()
+
+combine <- p1 + p2 + p3
+combine
+```
+
+
+# 8. Theme
+
+In this chapter you will learn how to use the ggplot2 theme system, which allows you to exercise fine control over the non-data elements of your plot. The theme system does not affect how the data is rendered by geoms, or how it is transformed by scales. Themes don’t change the perceptual properties of the plot, but they do help you make the plot aesthetically pleasing or match an existing style guide. Themes give you control over things like fonts, ticks, panel strips, and backgrounds.
+
+The theming system is composed of four main components:
+
+* Theme elements specify the non-data elements that you can control. For example, the plot.title element controls the appearance of the plot title; axis.ticks.x, the ticks on the x axis; legend.key.height, the height of the keys in the legend.
+* Each element is associated with an element function, which describes the visual properties of the element. For example, `element_text()` sets the font size, colour and face of text elements like plot.title.
+* The `theme()` function which allows you to override the default theme elements by calling element functions, like theme(plot.title = element_text(colour = "red")).
+* Complete themes, like theme_grey() set all of the theme elements to values designed to work together harmoniously.
+
+## Complete themes
+
+ggplot2 comes with a number of built-in themes. 
+
+* `theme_grey()`: Light grey backgound and white gridlines. 
+* `theme_bw()`: Variation on theme_grey() that uses a white background and thin grey grid lines.
+* `theme_linedraw()`: Theme with only black lines of various widths on white backgrounds, reminiscent of a line drawing.
+* `theme_light()`: Similar to theme_linedraw() but with light grey lines and axes, to direct more attention towards the data.
+* `theme_dark()`: Dark cousin of theme_light(), with similar line sizes but a dark background. Useful to make thin coloured lines pop out.
+* `theme_minimal()`: Minimalistic theme with no background annotations.
+* `theme_classic()`: Classic-looking theme, with x and y axis lines and no gridlines.
+* `theme_void()`: Completely empty theme.
+
+```{r, message = FALSE, warning = FALSE, eval = FALSE}
+
+xxx + theme_grey() + ggtitle("theme_grey()")
+xxx + theme_bw() + ggtitle("theme_bw()")
+xxx + theme_linedraw() + ggtitle("theme_linedraw()")
+xxx + theme_light() + ggtitle("theme_light()")
+xxx + theme_dark() + ggtitle("theme_dark()")
+xxx + theme_minimal()  + ggtitle("theme_minimal()")
+xxx + theme_classic() + ggtitle("theme_classic()")
+xxx + theme_void() + ggtitle("theme_void()")
+```
+
+```{r, message = FALSE, warning = FALSE, echo = FALSE}
+
+df <- data.frame(x = 1:3, y = 1:3)
+base <- ggplot(df, aes(x, y)) + geom_point()
+
+p1 <- base + theme_grey() + ggtitle("theme_grey()")
+p2 <- base + theme_bw() + ggtitle("theme_bw()")
+p3 <- base + theme_linedraw() + ggtitle("theme_linedraw()")
+p4 <- base + theme_light() + ggtitle("theme_light()")
+p5 <- base + theme_dark() + ggtitle("theme_dark()")
+p6 <- base + theme_minimal()  + ggtitle("theme_minimal()")
+p7 <- base + theme_classic() + ggtitle("theme_classic()")
+p8 <- base + theme_void() + ggtitle("theme_void()")
+
+(p1 | p2 | p3 | p4) / (p5 | p6 | p7 | p8)
+
+```
+
+You’re not limited to the themes built-in to ggplot2. Other packages, like `ggthemes` add even more. Here are a few:
+
+```{r, message = FALSE, warning = FALSE, eval = FALSE}
+library(ggthemes)
+
+xxx + theme_tufte() + ggtitle("theme_tufte()")
+xxx + theme_solarized() + ggtitle("theme_solarized()")
+xxx + theme_excel() + ggtitle("theme_excel()")
+```
+
+```{r, message = FALSE, warning = FALSE, echo = FALSE}
+library(ggthemes)
+
+df <- data.frame(x = 1:3, y = 1:3)
+base <- ggplot(df, aes(x, y)) + geom_point()
+
+p1 <- base + theme_tufte() + ggtitle("theme_tufte()")
+p2 <- base + theme_solarized() + ggtitle("theme_solarized()")
+p3 <- base + theme_excel() + ggtitle("theme_excel()")
+
+p1 | p2 | p3
+```
+
+
+## Modifying theme components
+
+To modify an individual theme component you use code like `plot + theme(element.name = element_function())`. There are four basic types of built-in element functions: text, lines, rectangles, and blank. Each element function has a set of parameters that control the appearance.
+
+* `element_text()`: Draws labels and headings. You can control the font family, face, colour, size (in points), hjust, vjust, angle (in degrees) and lineheight (as ratio of fontcase). More details on the parameters can be found in vignette("ggplot2-specs"). Setting the font face is particularly challenging. You can control the margins around the text with the margin argument and `margin()` function. `margin()` has four arguments: the amount of space (in points) to add to the top, right, bottom and left sides of the text. Any elements not specified default to 0.
+
+```{r, message = FALSE, warning = FALSE, eval = FALSE}
+xxx + labs(title = "This is a ggplot") + xlab(NULL) + ylab(NULL)
+xxx + theme(plot.title = element_text(size = 16))
+xxx + theme(plot.title = element_text(face = "bold", colour = "red"))
+xxx + theme(plot.title = element_text(hjust = 1))
+```
+
+```{r, message = FALSE, warning = FALSE, echo = FALSE}
+
+df <- data.frame(x = 1:3, y = 1:3)
+base <- ggplot(df, aes(x, y)) + geom_point() 
+base_t <- base + labs(title = "This is a ggplot") + xlab(NULL) + ylab(NULL)
+
+p1 <- base_t + theme(plot.title = element_text(size = 16))
+p2 <- base_t + theme(plot.title = element_text(face = "bold", colour = "red"))
+p3 <- base_t + theme(plot.title = element_text(hjust = 1))
+
+p1 | p2 | p3
+```
+
+
+```{r, message = FALSE, warning = FALSE, eval = FALSE}
+xxx + theme(plot.title = element_text(margin = margin()))
+xxx + theme(plot.title = element_text(margin = margin(t = 10, b = 10)))
+xxx + theme(axis.title.y = element_text(margin = margin(r = 10)))
+```
+
+```{r, message = FALSE, warning = FALSE, eval = FALSE}
+
+df <- data.frame(x = 1:3, y = 1:3)
+base <- ggplot(df, aes(x, y)) + geom_point() 
+base_t <- labs(title = "This is a ggplot") + xlab(NULL) + ylab(NULL)
+
+p1 <- base_t + theme(plot.title = element_text(margin = margin()))
+p2 <- base_t + theme(plot.title = element_text(margin = margin(t = 10, b = 10)))
+p3 <- base_t + theme(axis.title.y = element_text(margin = margin(r = 10)))
+
+p1 | p2 | p3
+```
+
+
+* `element_line()`: Draws lines parameterised by colour, linewidth and linetype.
+
+```{r, message = FALSE, warning = FALSE, eval = FALSE}
+xxx + theme(panel.grid.major = element_line(colour = "black"))
+xxx + theme(panel.grid.major = element_line(linewidth = 2))
+xxx + theme(panel.grid.major = element_line(linetype = "dotted"))
+```
+
+```{r, message = FALSE, warning = FALSE, echo = FALSE}
+
+df <- data.frame(x = 1:3, y = 1:3)
+base <- ggplot(df, aes(x, y)) + geom_point() 
+
+p1 <- base + theme(panel.grid.major = element_line(colour = "black"))
+p2 <- base + theme(panel.grid.major = element_line(linewidth = 2))
+p3 <- base + theme(panel.grid.major = element_line(linetype = "dotted"))
+
+p1 | p2 | p3
+```
+
+
+* `element_rect()`: Draws rectangles, mostly used for backgrounds, parameterised by fill colour and border colour, linewidth and linetype.
+
+```{r, message = FALSE, warning = FALSE, eval = FALSE}
+xxx + theme(plot.background = element_rect(fill = "grey80", colour = NA))
+xxx + theme(plot.background = element_rect(colour = "red", linewidth = 2))
+xxx + theme(panel.background = element_rect(fill = "linen"))
+```
+
+```{r, message = FALSE, warning = FALSE, echo = FALSE}
+
+df <- data.frame(x = 1:3, y = 1:3)
+base <- ggplot(df, aes(x, y)) + geom_point() 
+
+p1 <- base + theme(plot.background = element_rect(fill = "grey80", colour = NA))
+p2 <- base + theme(plot.background = element_rect(colour = "red", linewidth = 2))
+p3 <- base + theme(panel.background = element_rect(fill = "linen"))
+
+p1 | p2 | p3
+```
+
+
+* `element_blank()`: Draws nothing. Use this if you don’t want anything drawn, and no space allocated for that element. The following example uses element_blank() to progressively suppress the appearance of elements we’re not interested in. Notice how the plot automatically reclaims the space previously used by these elements: if you don’t want this to happen (perhaps because they need to line up with other plots on the page), use colour = NA, fill = NA to create invisible elements that still take up space.
+
+```{r, message = FALSE, warning = FALSE, eval = FALSE}
+
+xxx + theme(panel.grid.minor = element_blank())
+xxx + theme(panel.grid.major = element_blank())
+xxx + theme(panel.background = element_blank())
+xxx + theme(axis.title.x = element_blank(), axis.title.y = element_blank())
+xxx + theme(axis.line = element_line(colour = "grey50"))
+
+```
+
+```{r, message = FALSE, warning = FALSE, echo = FALSE}
+
+df <- data.frame(x = 1:3, y = 1:3)
+base <- ggplot(df, aes(x, y)) + geom_point() + last_plot()
+
+p1 <- base + theme(panel.grid.minor = element_blank())
+p2 <- base + theme(panel.grid.major = element_blank())
+p3 <- base + theme(panel.background = element_blank())
+p4 <- base + theme(axis.title.x = element_blank(), axis.title.y = element_blank())
+p5 <- base + theme(axis.line = element_line(colour = "grey50"))
+
+
+(p1 + p2 + p3) / (p4 + p5)
+```
+
+
+`theme_update()` returns the previous theme settings, so you can easily restore the original parameters once you’re done.
+
+```{r, message = FALSE, warning = FALSE, eval = FALSE}
+theme_update(
+  plot.background = element_rect(fill = "lightblue3", colour = NA),
+  panel.background = element_rect(fill = "lightblue", colour = NA),
+  axis.text = element_text(colour = "linen"),
+  axis.title = element_text(colour = "linen"))
+
+```
+
+```{r, message= FALSE, warning = FALSE, echo = FALSE}
+old_theme <- theme_update(
+  plot.background = element_rect(fill = "lightblue3", colour = NA),
+  panel.background = element_rect(fill = "lightblue", colour = NA),
+  axis.text = element_text(colour = "linen"),
+  axis.title = element_text(colour = "linen")
+)
+
+base
+theme_set(old_theme)
+base
+```
+
+
+## Theme elements
+
+There are around 40 unique elements that control the appearance of the plot. They can be roughly grouped into five categories: plot, axis, legend, panel and facet. The following sections describe each in turn.
+
+### Plot elements
+
+Some elements affect the plot as a whole:
+
+* `plot.background`
+* `plot.title`
+* `plot.margin`
+* `plot.background` 
+
+```{r, message = FALSE, warning = FALSE, eval = FALSE}
+xxx + theme(plot.background = element_rect(colour = "grey50", linewidth = 2))
+xxx + theme(plot.background = element_rect(colour = "grey50", linewidth = 2),plot.margin = margin(2, 2, 2, 2))
+xxx + theme(plot.background = element_rect(fill = "lightblue"))
+```
+
+
+```{r, message = FALSE, warning = FALSE, echo = FALSE}
+
+df <- data.frame(x = 1:3, y = 1:3)
+
+p1 <- ggplot(df, aes(x, y)) + geom_point() + theme(plot.background = element_rect(colour = "grey50", linewidth = 2))
+p2 <- ggplot(df, aes(x, y)) + geom_point() + theme(plot.background = element_rect(colour = "grey50", linewidth = 2), plot.margin = margin(2, 2, 2, 2))
+p3 <- ggplot(df, aes(x, y)) + geom_point() + theme(plot.background = element_rect(fill = "lightblue"))
+
+p1 | p2 | p3
+```
+
+
+### Axis elements
+
+The axis elements control the appearance of the axes:
+
+* `axis.line`: Line parallel to axis (hidden in default themes).
+* `axis.text`: Lick labels.
+* `axis.text.x`: x-axis tick labels.
+* `axis.text.y`: y-axis tick labels. 
+* `axis.title`: Axis titles.
+* `axis.title.x`: x-axis title.
+* `axis.title.y`: y-axis title.
+* `axis.ticks`: Axis tick marks. 
+* `axis.ticks.length`: Length of tick marks. 
+
+Note that `axis.text` (and `axis.title`) comes in three forms: `axis.text`, `axis.text.x`, and `axis.text.y`. Use the first form if you want to modify the properties of both axes at once: any properties that you don’t explicitly set in axis.text.x and axis.text.y will be inherited from axis.text.
+
+```{r, message = FALSE, warning = FALSE, eval = FALSE}
+xxx + theme(axis.line = element_line(colour = "grey50", linewidth = 1))
+xxx + theme(axis.text = element_text(color = "blue", size = 12))
+xxx + theme(axis.text.x = element_text(angle = -90, vjust = 0.5))
+```
+
+```{r, message = FALSE, warning = FALSE, echo = FALSE}
+
+df <- data.frame(x = 1:3, y = 1:3)
+
+p1 <- ggplot(df, aes(x, y)) + geom_point() + theme(axis.line = element_line(colour = "grey50", linewidth = 1))
+p2 <- ggplot(df, aes(x, y)) + geom_point() + theme(axis.text = element_text(color = "blue", size = 12))
+p3 <- ggplot(df, aes(x, y)) + geom_point() + theme(axis.text.x = element_text(angle = -90, vjust = 0.5))
+
+p1 | p2 | p3
+
+```
+
+
+The most common adjustment is to rotate the x-axis labels to avoid long overlapping labels. If you do this, note negative angles tend to look best and you should set hjust = 0 and vjust = 1. 
+
+```{r, message = FALSE, warning = FALSE, eval = FALSE}
+
+xxx + theme(axis.text.x = element_text(angle = -30, vjust = 1, hjust = 0)) + xlab(NULL) + ylab(NULL)
+
+```
+
+
+```{r, message = FALSE, warning = FALSE, echo = FALSE}
+
+df <- data.frame(x = c("label", "a long label", "an even longer label"), y = 1:3)
+
+p1 <- ggplot(df, aes(x, y)) + geom_point()
+p2 <- ggplot(df, aes(x, y)) + geom_point() + theme(axis.text.x = element_text(angle = -30, vjust = 1, hjust = 0)) + xlab(NULL) + ylab(NULL)
+
+p1 + p2
+
+```
+
+
+### Legend elements
+
+The legend elements control the appearance of all legends. You can also modify the appearance of individual legends by modifying the same elements in `guide_legend()` or `guide_colourbar()`.
+
+* `legend.background`: Legend background.
+* `legend.key`: Background of legend keys. 
+* `legend.key.size`: Legend key size. 
+* `legend.key.height`: Legend key height.
+* `legend.key.width`: Legend key width.
+* `legend.margin`: Legend margin.
+* `legend.text`: Legend labels.
+* `legend.text.align`: Label alignment (0 = right, 1 = left)
+* `legend.title`: Legend name. 
+* `legend.title.align`: Legend name alignment (0 = right, 1 = left).
+
+```{r, message = FALSE, warning = FALSE, eval = FALSE}
+
+xxx + theme(legend.background = element_rect(fill = "lemonchiffon", colour = "grey50", linewidth = 1))
+xxx + theme(legend.key = element_rect(color = "grey50"), legend.key.width = unit(0.9, "cm"), legend.key.height = unit(0.75, "cm"))
+xxx + theme(legend.text = element_text(size = 15), legend.title = element_text(size = 15, face = "bold"))
+
+```
+
+
+```{r, message = FALSE, warning = FALSE, echo = FALSE}
+
+df <- data.frame(x = 1:4, y = 1:4, z = rep(c("a", "b"), each = 2))
+
+p1 <- ggplot(df, aes(x, y, colour = z)) + geom_point() + theme(legend.background = element_rect(fill = "lemonchiffon", colour = "grey50", linewidth = 1))
+p2 <- ggplot(df, aes(x, y, colour = z)) + geom_point() + theme(legend.key = element_rect(color = "grey50"), legend.key.width = unit(0.9, "cm"), legend.key.height = unit(0.75, "cm"))
+p3 <- ggplot(df, aes(x, y, colour = z)) + geom_point() + theme(legend.text = element_text(size = 15), legend.title = element_text(size = 15, face = "bold"))
+
+p1 | p2 | p3
+
+```
+
+
+There are four other properties that control how legends are laid out in the context of the plot (`legend.position`, `legend.direction`, `legend.justification`, `legend.box`).
+
+### Panel elements
+
+Panel elements control the appearance of the plotting panels:
+
+* `panel.background`:	Panel background (under data).
+* `panel.border`:	Panel border (over data).
+* `panel.grid.major`:	Major grid lines.
+* `panel.grid.major.x`:	Vertical major grid lines.
+* `panel.grid.major.y`:	Horizontal major grid lines.
+* `panel.grid.minor`:	Minor grid lines.
+* `panel.grid.minor.x`:	Vertical minor grid lines.
+* `panel.grid.minor.y`:	Horizontal minor grid lines.
+* `aspect.ratio`:	Plot aspect ratio.
+
+The main difference between `panel.background` and `panel.border` is that the background is drawn underneath the data, and the border is drawn on top of it. For that reason, you’ll always need to assign fill = NA when overriding `panel.border`.
+
+```{r, message = FALSE, warning = FALSE, eval = FALSE}
+
+xxx + theme(panel.background = element_rect(fill = "lightblue"))
+xxx + theme(panel.grid.major = element_line(color = "gray60", linewidth = 0.8))
+xxx + theme(panel.grid.major.x = element_line(color = "gray60", linewidth = 0.8))
+
+xxx + theme(aspect.ratio = 9 / 16)
+xxx + theme(aspect.ratio = 2 / 1)
+xxx + theme(aspect.ratio = 1)
+
+```
+
+
+```{r, message = FALSE, warning = FALSE, echo = FALSE}
+
+df <- data.frame(x = 1:4, y = 1:4, z = rep(c("a", "b"), each = 2))
+
+p1 <- ggplot(df, aes(x, y)) + geom_point() + theme(panel.background = element_rect(fill = "lightblue"))
+p2 <- ggplot(df, aes(x, y)) + geom_point() + theme(panel.grid.major = element_line(color = "gray60", linewidth = 0.8))
+p3 <- ggplot(df, aes(x, y)) + geom_point() + theme(panel.grid.major.x = element_line(color = "gray60", linewidth = 0.8))
+
+p4 <- ggplot(df, aes(x, y)) + geom_point() + theme(plot.background = element_rect(colour = "grey50")) + theme(aspect.ratio = 9 / 16)
+p5 <- ggplot(df, aes(x, y)) + geom_point() + theme(plot.background = element_rect(colour = "grey50")) + theme(aspect.ratio = 2 / 1)
+p6 <- ggplot(df, aes(x, y)) + geom_point() + theme(plot.background = element_rect(colour = "grey50")) + theme(aspect.ratio = 1)
+
+```
+
+
+## Faceting elements
+
+Faceting generates small multiples each showing a different subset of the data. Small multiples are a powerful tool for exploratory data analysis: you can rapidly compare patterns in different parts of the data and see whether they are the same or different. 
+
+There are three types of faceting:
+
+* `facet_null()`: A single plot, the default.
+* `facet_wrap()`: “Wraps” a 1d ribbon of panels into 2d.This is useful if you have a single variable with many levels and want to arrange the plots in a more space efficient manner.
+* `facet_grid()`: Produces a 2d grid of panels defined by variables which form the rows and columns.
+
+Data can be separated as follows:
+  * `~ a` spreads the values of a across the columns. This direction facilitates comparisons of y position, because the vertical scales are aligned.
+  * `b ~ .` spreads the values of b down the rows. This direction facilitates comparison of x position because the horizontal scales are aligned. This makes it particularly useful for comparing distributions.
+  * `b ~ a` spreads a across columns and b down rows. You’ll usually want to put the variable with the greatest number of levels in the columns, to take advantage of the aspect ratio of your screen.
+  * You can use multiple variables in the rows or columns, by “adding” them together, e.g. `a + b ~ c + d`. 
+
+Variables appearing together on the rows or columns are nested in the sense that only combinations that appear in the data will appear in the plot. Variables that are specified on rows and columns will be crossed: all combinations will be shown, including those that didn’t appear in the original dataset: this may result in empty panels.
+
+```{r, warning= FALSE, message = FALSE}
+ggplot(mpg, aes(displ, hwy)) + 
+  geom_point() + 
+  facet_wrap(~class)
+```
+
+```{r, warning= FALSE, message = FALSE}
+ggplot(mpg, aes(displ, hwy)) + 
+  geom_point() +
+  geom_smooth() + 
+  facet_wrap(~year)
+```
+
+```{r, warning= FALSE, message = FALSE}
+ggplot(mpg, aes(displ, hwy, colour = factor(cyl))) +
+  geom_point() + 
+  gghighlight::gghighlight() + 
+  facet_wrap(vars(cyl))
+```
+
+The following theme elements are associated with faceted ggplots:
+
+* `strip.background`: Background of panel strips.
+* `strip.text`: Strip text.
+* `strip.text.x`: Horizontal strip text.
+* `strip.text.y`: Vertical strip text.
+* `panel.spacing`: Margin between facets.
+* `panel.spacing.x`: Margin between facets (vertical).
+* `panel.spacing.y`: Margin between facets (horizontal).
+
+Element `strip.text.x` affects both `facet_wrap()` or `facet_grid()`; strip.text.y only affects facet_grid().
+
+```{r, message = FALSE, warning = FALSE, eval = FALSE}
+xxx + facet_wrap(~z)
+```
+
+```{r, message = FALSE, warning = FALSE, echo = FALSE}
+df <- data.frame(x = 1:4, y = 1:4, z = c("a", "a", "b", "b"))
+ggplot(df, aes(x, y)) + geom_point() + facet_wrap(~z)
+```
+
+```{r, message = FALSE, warning = FALSE, eval = FALSE}
+xxx + facet_wrap(~z) + theme(panel.spacing = unit(0.5, "in"))
+```
+
+```{r, message = FALSE, warning = FALSE, echo = FALSE}
+df <- data.frame(x = 1:4, y = 1:4, z = c("a", "a", "b", "b"))
+ggplot(df, aes(x, y)) + geom_point() + facet_wrap(~z) + theme(panel.spacing = unit(0.5, "in"))
+```
+
+
+```{r, message = FALSE, warning = FALSE, eval = FALSE}
+xxx + facet_wrap(~z) + theme(strip.text = element_text(colour = "white"), strip.background = element_rect(fill = "grey20", color = "grey80", linewidth = 1))
+```
+
+
+```{r, message = FALSE, warning = FALSE, echo = FALSE}
+df <- data.frame(x = 1:4, y = 1:4, z = c("a", "a", "b", "b"))
+ggplot(df, aes(x, y)) + geom_point() + facet_wrap(~z) + theme(strip.text = element_text(colour = "white"), strip.background = element_rect(fill = "grey20", color = "grey80", linewidth = 1))
+```
+
+
+# 9. Other aesthetics
+
+## Size
+
+The size aesthetic is typically used to scale points and text. The default scale for size aesthetics is `scale_size()` in which a linear increase in the variable is mapped onto a linear increase in the area (not the radius) of the geom. Scaling as a function of area is a sensible default as human perception of size is more closely mimicked by area scaling than by radius scaling. By default the smallest value in the data (more precisely in the scale limits) is mapped to a size of 1 and the largest is mapped to a size of 6. The `range` argument allows you to scale the size of the geoms. 
+
+```{r, message = FALSE, warning = FALSE, eval = FALSE}
+xxx + scale_size(range = c(1, 2))
+```
+
+```{r, message = FALSE, warning = FALSE, echo = FALSE}
+ggplot(mpg, aes(displ, hwy, size = cyl)) + geom_point() + scale_size(range = c(1, 2))
+```
+
+There are several size scales worth noting briefly:
+
+* `scale_size_area()` and `scale_size_binned_area()`: Versions of `scale_size()` and `scale_size_binned()` that ensure that a value of 0 maps to an area of 0.
+* `scale_radius()`: Maps the data value to the radius rather than to the area.
+* `scale_size_binned()`: A size scale that behaves like `scale_size()` but maps continuous values onto discrete size categories, analogous to the binned position and colour scales. 
+* `scale_size_date()` and `scale_size_datetime()`: Designed to handle date data.
+* `scale_radius()`
+
+
+### Binned size scales
+
+Binned size scales work similarly to binned scales for colour and position aesthetics. One difference is how legends are displayed. The default legend for a binned size scale, and all binned scales except position and colour aesthetics, is governed by `guide_bins()`. The important arguments to guide_bins() are listed below:
+
+* `axis`: Indicates whether the axis should be drawn (default is TRUE).
+* `direction`: A character string specifying the direction of the guide, either "vertical" (the default) or "horizontal".
+* `show.limits`: Specifies whether tick marks are shown at the ends of the guide axis (default is FALSE).
+* `axis.colour`, `axis.linewidth` and `axis.arrow`: Vontrol the guide axis that is displayed alongside the legend keys.
+* `keywidth`, `keyheight`, `reverse` and `override.aes` have the same behaviour for `guide_bins()` as they do for `guide_legend()`.
+
+
+```{r, message = FALSE, warning = FALSE, eval = FALSE}
+xxx + guides(size = guide_bins(axis = FALSE))
+xxx + guides(size = guide_bins(direction = "horizontal"))
+xxx + guides(size = guide_bins(show.limits = TRUE))
+xxx + guides(size = guide_bins(axis.colour = "red",axis.arrow = arrow(length = unit(.1, "inches"), ends = "first", type = "closed")))
+
+```
+
+
+```{r, message = FALSE, warning = FALSE, echo = FALSE}
+p1 <- ggplot(mpg, aes(displ, manufacturer, size = hwy)) + geom_point(alpha = .2) + scale_size_binned() + guides(size = guide_bins(axis = FALSE))
+
+p2 <- ggplot(mpg, aes(displ, manufacturer, size = hwy)) + geom_point(alpha = .2) + scale_size_binned() + guides(size = guide_bins(direction = "horizontal"))
+
+p3 <- ggplot(mpg, aes(displ, manufacturer, size = hwy)) + geom_point(alpha = .2) + scale_size_binned() + guides(size = guide_bins(show.limits = TRUE))
+
+p4 <- ggplot(mpg, aes(displ, manufacturer, size = hwy)) + geom_point(alpha = .2) + scale_size_binned() + guides(size = guide_bins(axis.colour = "red",axis.arrow = arrow(length = unit(.1, "inches"), ends = "first", type = "closed")))
+
+combine <- p1 + p2 + p3 + p4
+combine
+
+```
+
+
+## Shape
+
+Values can be mapped to the shape aesthetic. The typical use for this is when you have a small number of discrete categories: if the data variable contains more than 6 values it becomes difficult to distinguish between shapes, and will produce a warning. The default `scale_shape()` function contains a single argument: set solid = TRUE (the default) to use a “palette” consisting of three solid shapes and three hollow shapes, or set solid = FALSE to use six hollow shapes. You can specify the marker types for each data value manually using `scale_shape_manual()`.
+
+```{r, message = FALSE, warning = FALSE, eval = FALSE}
+xxx + scale_shape(solid = FALSE)
+xxx + scale_shape_manual(values = c("4" = 16, "5" = 17, "6" = 1 , "8" = 2))
+```
+
+
+```{r, message = FALSE, warning = FALSE, echo = FALSE}
+p1 <- ggplot(mpg, aes(displ, hwy, shape = factor(cyl))) + geom_point() + scale_shape(solid = FALSE)
+p2 <- ggplot(mpg, aes(displ, hwy, shape = factor(cyl))) + geom_point() + scale_shape_manual(values = c("4" = 16, "5" = 17, "6" = 1 , "8" = 2))
+
+p1 + p2
+```
+
+
+## Line type
+
+It is possible to map a variable onto the linetype aesthetic in ggplot2. This works best for discrete variables with a small number of categories, and `scale_linetype()` is an alias for `scale_linetype_discrete()`. Continuous variables cannot be mapped to line types unless `scale_linetype_binned() is used`: although there is a `scale_linetype_continuous()` function, all it does is produce an error. 
+
+With five categories the plot is quite difficult to read, and it is unlikely you will want to use the linetype aesthetic for more than that. The default “palette” for linetype is supplied by the `scales::linetype_pal()` function, and includes the 13 linetypes shown below:
+
+```{r, message = FALSE, warning = FALSE}
+df <- data.frame(value = letters[1:13])
+ggplot(df, aes(linetype = value)) + geom_segment(mapping = aes(x = 0, xend = 1, y = value, yend = value), show.legend = FALSE) + theme(panel.grid = element_blank()) + scale_x_continuous(NULL, NULL) 
+
+```
+
+You can control the line type by specifying a string with up to 8 hexadecimal values (i.e., from 0 to F). In this specification, the first value is the length of the first line segment, the second value is the length of the first space between segments, and so on. This allows you to specify your own line types using `scale_linetype_manual()`, or alternatively, by passing a custom function to the palette argument. 
+
+Valid line types can be set using a human readable character string: "blank", "solid", "dashed", "dotted", "dotdash", "longdash", and "twodash" are all understood.
+
+
+## Line width
+
+The linewidth aesthetic is used to control the width of lines. In earlier versions of ggplot2 the size aesthetic was used for this purpose, which caused some difficulty for complex geoms such as geom_pointrange() that contain both points and lines. For these geoms it’s often important to be able to separately control the size of the points and the width of the lines. 
+
+Linewidth scales behave like size scales in most ways, but there are differences. The default behaviour of a size scale is to increase linearly with the area of the plot marker (e.g., the diameter of a circular plot marker increases with the square root of the data value). In contrast, the linewidth increases linearly with the data value.
+
+Binned linewidth scales can be added using `scale_linewidth_binned()`.
+
+
+# 10. Annotations
+
+`annotate` function allows to highlight specific areas of the plot.   
+
+```{r, message = FALSE, warning = FALSE, eval = FALSE}
+xxx + annotate(geom = "point", x = 5.5, y = 40, colour = "orange", size = 3) +
+  annotate(geom = "point", x = 5.5, y = 40) +
+  annotate(geom = "text", x = 5.6, y = 40, label = "subaru", hjust = "left")
+
+```
+
+```{r, message = FALSE, warning = FALSE, eval = FALSE}
+xxx + annotate(geom = "curve", x = 4, y = 35, xend = 2.65, yend = 27, curvature = .3, arrow = arrow(length = unit(2, "mm"))) +
+  annotate(geom = "text", x = 4.1, y = 35, label = "subaru", hjust = "left")
+```
+
+```{r, message = FALSE, warning = FALSE, echo = FALSE}
+p <- ggplot(mpg, aes(displ, hwy)) +
+  geom_point(
+    data = filter(mpg, manufacturer == "subaru"), 
+    colour = "orange",
+    size = 3
+  ) +
+  geom_point() 
+
+p1 <- p + annotate(geom = "point", x = 5.5, y = 40, colour = "orange", size = 3) +
+  annotate(geom = "point", x = 5.5, y = 40) +
+  annotate(geom = "text", x = 5.6, y = 40, label = "subaru", hjust = "left")
+
+p2 <- p + annotate(geom = "curve", x = 4, y = 35, xend = 2.65, yend = 27, curvature = .3, arrow = arrow(length = unit(2, "mm"))) +
+  annotate(geom = "text", x = 4.1, y = 35, label = "subaru", hjust = "left")
+
+combine <- p1 + p2 
+combine
+```
+
+
+# 11. Colors
+
+Gradient scales provide a robust method for creating any colour scheme you like. All you need to do is specify two or more reference colours, and ggplot2 will interpolate linearly between them. There are three functions that you can use for this purpose:
+
+* `scale_fill_gradient()`: Produces a two-colour gradient.
+* `scale_fill_gradient2()`: Produces a three-colour gradient with specified midpoint.
+* `scale_fill_gradientn()`: Produces an n-colour gradient.
+
+The default scale for discrete colours is `scale_fill_discrete()` which in turn defaults to `scale_fill_hue()`. 
+
+```{r}
+df <- data.frame(x = c("a", "b", "c", "d"), y = c(3, 4, 1, 2))
+ggplot(df, aes(x, y, fill = x)) + 
+  geom_bar(stat = "identity") + 
+  labs(x = NULL, y = NULL) +
+  theme(legend.position = "none") +
+  scale_fill_discrete()
+```
+
+
+## Brewer scales
+
+`scale_colour_brewer()` is a discrete colour scale that—along with the continuous analog `scale_colour_distiller()` and binned analog `scale_colour_fermenter()`—uses handpicked “ColorBrewer” colours taken from https://colorbrewer2.org/. These colours have been designed to work well in a wide variety of situations, although the focus is on maps and so the colours tend to work better when displayed in large areas. There are many different options:
+
+```{r}
+RColorBrewer::display.brewer.all()
+```
+
+The first group of palettes are sequential scales that are useful when your discrete scale is ordered (e.g., rank data), and are available for continuous data using `scale_colour_distiller()`. For unordered categorical data, the palettes of most interest are those in the second group. ‘Set1’ and ‘Dark2’ are particularly good for points, and ‘Set2’, ‘Pastel1’, ‘Pastel2’ and ‘Accent’ work well for areas.
+
+```{r, message = FALSE, warning = FALSE, eval = FALSE}
+xxx + scale_fill_brewer(palette = "Set1")
+xxx + scale_fill_brewer(palette = "Set2")
+xxx + scale_fill_brewer(palette = "Accent")
+```
+
+```{rmessage = FALSE, warning = FALSE, echo = FALSE}
+p1 <- ggplot(df, aes(x, y, fill = x)) + 
+  geom_bar(stat = "identity") + 
+  labs(x = NULL, y = NULL) +
+  theme(legend.position = "none") +
+  scale_fill_brewer(palette = "Set1")
+
+p2 <- ggplot(df, aes(x, y, fill = x)) + 
+  geom_bar(stat = "identity") + 
+  labs(x = NULL, y = NULL) +
+  theme(legend.position = "none") +
+  scale_fill_brewer(palette = "Set2")
+
+p3 <- ggplot(df, aes(x, y, fill = x)) + 
+  geom_bar(stat = "identity") + 
+  labs(x = NULL, y = NULL) +
+  theme(legend.position = "none") +
+  scale_fill_brewer(palette = "Accent")
+  
+combine <- p1 + p2 + p3 
+combine
+```
+
+
+If you are intending a discrete colour scale to be printed in black and white, it is better to explicitly use scale_fill_grey() which maps discrete data to grays, from light to dark:
+
+```{r, message = FALSE, warning = FALSE, eval = FALSE}
+xxx + scale_fill_grey()
+xxx + scale_fill_grey(start = 0.5, end = 1)
+xxx + scale_fill_grey(start = 0, end = 0.5)
+```
+
+```{r, message = FALSE, warning = FALSE, echo = FALSE}
+p1 <- ggplot(df, aes(x, y, fill = x)) + 
+  geom_bar(stat = "identity") + 
+  labs(x = NULL, y = NULL) +
+  theme(legend.position = "none") +
+  scale_fill_grey()
+  
+p2 <- ggplot(df, aes(x, y, fill = x)) + 
+  geom_bar(stat = "identity") + 
+  labs(x = NULL, y = NULL) +
+  theme(legend.position = "none") +
+  scale_fill_grey(start = 0.5, end = 1)
+  
+p3 <- ggplot(df, aes(x, y, fill = x)) + 
+  geom_bar(stat = "identity") + 
+  labs(x = NULL, y = NULL) +
+  theme(legend.position = "none") +
+  scale_fill_grey(start = 0, end = 0.5)
+
+combine <- p1 + p2 + p3
+combine
+```
+
+
+## Paletteer scales
+
+Another alternative is provided by the `paletteer` package. By providing a unified interface that spans a large number of packages, `paletteer` makes it possible to choose among a very large number of palettes in a consistent way:
+
+```{r, message = FALSE, warning = FALSE, eval = FALSE}
+xxx + paletteer::scale_fill_paletteer_d("rtist::vangogh")
+xxx + paletteer::scale_fill_paletteer_d("colorBlindness::paletteMartin")
+xxx + paletteer::scale_fill_paletteer_d("wesanderson::FantasticFox1")
+```
+
+```{r, message = FALSE, warning = FALSE, echo = FALSE}
+
+p1 <- ggplot(df, aes(x, y, fill = x)) + 
+  geom_bar(stat = "identity") + 
+  labs(x = NULL, y = NULL) +
+  theme(legend.position = "none") +
+  paletteer::scale_fill_paletteer_d("rtist::vangogh")
+
+p2 <- ggplot(df, aes(x, y, fill = x)) + 
+  geom_bar(stat = "identity") + 
+  labs(x = NULL, y = NULL) +
+  theme(legend.position = "none") +
+  paletteer::scale_fill_paletteer_d("colorBlindness::paletteMartin")
+
+p3 <- ggplot(df, aes(x, y, fill = x)) + 
+  geom_bar(stat = "identity") + 
+  labs(x = NULL, y = NULL) +
+  theme(legend.position = "none") +
+  paletteer::scale_fill_paletteer_d("wesanderson::FantasticFox1")
+
+combine <- p1 + p2 + p3 
+combine
+```
+
+
+## Manual scales
+
+If none of the preexisting palettes is suitable, or if you have your own preferred colours, you can use `scale_fill_manual()` to set the colours manually. This can be useful if you wish to choose colours that highlight a secondary grouping structure or draw attention to different comparisons:
+
+```{r, message = FALSE, warning = FALSE, eval = FALSE}
+xxx + scale_fill_manual(values = c("sienna1", "sienna4", "hotpink1", "hotpink4"))
+xxx + scale_fill_manual(values = c("tomato1", "tomato2", "tomato3", "tomato4"))
+xxx + scale_fill_manual(values = c("grey", "black", "grey", "grey"))
+```
+
+```{r, message = FALSE, warning = FALSE, echo = FALSE}
+
+p1 <- ggplot(df, aes(x, y, fill = x)) + 
+  geom_bar(stat = "identity") + 
+  labs(x = NULL, y = NULL) +
+  theme(legend.position = "none") +
+  scale_fill_manual(values = c("sienna1", "sienna4", "hotpink1", "hotpink4"))
+
+p2 <- ggplot(df, aes(x, y, fill = x)) + 
+  geom_bar(stat = "identity") + 
+  labs(x = NULL, y = NULL) +
+  theme(legend.position = "none") +
+  scale_fill_manual(values = c("tomato1", "tomato2", "tomato3", "tomato4"))
+
+p3 <- ggplot(df, aes(x, y, fill = x)) + 
+  geom_bar(stat = "identity") + 
+  labs(x = NULL, y = NULL) +
+  theme(legend.position = "none") +
+  scale_fill_manual(values = c("grey", "black", "grey", "grey"))
+
+combine <- p1 + p2 + p3 
+combine
+```
+
+You can also use a named vector to specify colors to be assigned to each level which allows you to specify the levels in any order you like:
+
+```{r, message = FALSE, warning = FALSE, eval = FALSE}
+xxx + scale_fill_manual(values = c("d" = "grey","c" = "grey","b" = "black","a" = "grey"))
+```
+
+```{r, message = FALSE, warning = FALSE, echo = FALSE}
+
+ggplot(df, aes(x, y, fill = x)) + 
+  geom_bar(stat = "identity") + 
+  labs(x = NULL, y = NULL) +
+  theme(legend.position = "none") +
+  scale_fill_manual(values = c("d" = "grey","c" = "grey","b" = "black","a" = "grey"))
+
+```
+
+
+# 12. Arrange plots
+
+```{r, message = FALSE, warning = FALSE}
+library(patchwork)
+```
+
+The `patchwork` library allows to arrange the plots. To see how it can be done let's consider the following 4 plots:
+
+```{r}
+p1 <- ggplot(mpg) + 
+  geom_point(aes(x = displ, y = hwy))
+
+p2 <- ggplot(mpg) + 
+  geom_bar(aes(x = as.character(year), fill = drv), position = "dodge") + 
+  labs(x = "year")
+
+p3 <- ggplot(mpg) + 
+  geom_density(aes(x = hwy, fill = drv), colour = NA) + 
+  facet_grid(rows = vars(drv))
+
+p4 <- ggplot(mpg) + 
+  stat_summary(aes(x = drv, y = hwy, fill = drv), geom = "col", fun.data = mean_se) +
+  stat_summary(aes(x = drv, y = hwy), geom = "errorbar", fun.data = mean_se, width = 0.5)
+```
+
+```{r}
+p1 + p2
+```
+
+```{r}
+p1 + p2 + p3 + p4
+```
+
+
+It is often that the automatically created grid is not what you want and it is of course possible to control it. The most direct and powerful way is to do this is to add a `plot_layout()` specification to the plot. 
+
+```{r}
+p1 + p2 + p3 + plot_layout(ncol = 2)
+```
+
+A common scenario is wanting to force a single row or column. `patchwork` provides two operators, **|** and **/** respectively, to facilitate this (under the hood they simply set number of rows or columns in the layout to 1).
+
+```{r}
+p3 | (p2 / (p1 | p4))
+```
+
+```{r}
+layout <- "
+AAB
+C#B
+CDD
+"
+
+p1 + p2 + p3 + p4 + plot_layout(design = layout)
+```
+
+As has been apparent in the last couple of plots, the legend often becomes redundant between plots. While it is possible to remove the legend in all but one plot before assembling them, `patchwork` provides something easier for the common case.
+
+```{r, message = FALSE, warning = FALSE, eval = FALSE}
+p1 + p2 + p3 + plot_layout(ncol = 2, guides = "collect")
+```
+
+Electing to collect guides will take all guides and put them together at the position governed by the global theme. Further, it will remove any duplicate guide leaving only unique guides in the plot. The duplication detection looks at the appearance of the guide, and not the underlying scale it comes from. Thus, it will only remove guides that are exactly alike. If you want to optimize space use by putting guides in an empty area of the layout, you can specify a plotting area for collected guides. 
+
+```{r, message = FALSE, warning = FALSE}
+p1 + p2 + p3 + guide_area() + plot_layout(ncol = 2, guides = "collect")
+```
+
+One of the tenets of `patchwork` is that the plots remain as standard ggplot objects until rendered. This means that they are amenable to modification after they have been assembled. The specific plots can by retrieved and set with **[[]]** indexing. 
+
+```{r, message = FALSE, warning = FALSE}
+p12 <- p1 + p2
+p12[[2]] <- p12[[2]] + theme_light()
+p12
+```
+
+Often though, it is necessary to modify all subplots at once to e.g. give them a common theme. `patchwork` provides the **&** for this scenario. This can also be used to give plots a common axis if they share the same aesthetic on that axis. 
+
+```{r, message = FALSE, warning = FALSE, eval = FALSE}
+p1 + p4 & theme_minimal()
+p1 + p4 & scale_y_continuous(limits = c(0, 45))
+```
+
+Once plots have been assembled, they start to form a single unit. This also means that titles, subtitles, and captions will often pertain to the full ensemble and not individual plots. Titles etc. can be added to patchwork plots using the `plot_annotation()` function.
+
+```{r}
+p34 <- p3 + p4 + plot_annotation(
+  title = "A closer look at the effect of drive train in cars",
+  caption = "Source: mpg dataset in ggplot2"
+)
+p34
+```
+
+The titles formatted according to the theme specification in the plot_annotation() call.
+
+```{r}
+p34 + plot_annotation(theme = theme_gray(base_family = "mono"))
+```
+
+As the global theme often follows the theme of the subplots, using & along with a theme object will modify the global theme as well as the themes of the subplots. Another type of annotation, known especially in scientific literature, is to add tags to each subplot that will then be used to identify them in the text and caption. ggplot2 has the tag element for exactly this and patchwork offers functionality to set this automatically using the tag_levels argument. It can generate automatic levels in latin characters, arabic numerals, or roman numerals. 
+
+```{r}
+p123 <- p1 | (p2 / p3)
+p123 + plot_annotation(tag_levels = "I") # Uppercase roman numerics
+```
+
+
+An additional feature is that it is possible to use nesting to define new tagging levels:
+
+```{r}
+p123[[2]] <- p123[[2]] + plot_layout(tag_level = "new")
+p123 + plot_annotation(tag_levels = c("I", "a"))
+```
+
+While a lot of the functionality in patchwork is concerned with aligning plots in a grid, it also allows you to make insets, i.e. small plots placed on top of another plot. The functionality for this is wrapped in the `inset_element()` function which serves to mark the given plot as an inset to be placed on the preceding plot, along with recording the wanted placement etc. The position is specified by given the left, right, top, and bottom location of the inset. The default is to use npc units which goes from 0 to 1 in the given area, but any grid::unit() can be used by giving them explicitly. The location is by default set to the panel area, but this can be changed with the align_to argument. Combining all this we can place an inset exactly 15 mm from the top right corner like this:
+
+```{r}
+p1 + 
+  inset_element(
+    p2, 
+    left = 0.4, 
+    bottom = 0.4, 
+    right = unit(1, "npc") - unit(15, "mm"), 
+    top = unit(1, "npc") - unit(15, "mm"),
+    align_to = "full"
+  )
+```
+
+Insets are not confined to ggplots. Any graphics supported by wrap_elements() can be used, including patchworks.
+
+```{r}
+p24 <- p2 / p4 + plot_layout(guides = "collect")
+p1 + inset_element(p24, left = 0.5, bottom = 0.05, right = 0.95, top = 0.9)
+```
+
+A nice feature of insets is that they behave as standard patchwork subplots until they are rendered. This means that they are amenable to modifications after assembly, e.g. using &. 
+
+```{r}
+p12 <- p1 + inset_element(p2, left = 0.5, bottom = 0.5, right = 0.9, top = 0.95)
+p12 & theme_bw()
+```
+
+And auto tagging works as expected as well.
+
+```{r}
+p12 + plot_annotation(tag_levels = "A")
+```
+
+
+# 13. Save
+
+```{r}
+ggsave("plot.png", p, width = 5, height = 5)
+```
+
+`ggsave()` is optimised for interactive use: you can use it after you’ve drawn a plot. It has the following important arguments:
+
+* *path*: The path were the image should be saved. The file extension will be used to automatically select the correct graphics device. `ggsave()` can produce .eps, .pdf, .svg, .wmf, .png, .jpg, .bmp, and .tiff.
+* *width* and *height*: Output size, specified in inches. If left blank, they’ll use the size of the on-screen graphics device.
+* *dpi*: Controls the resolution of the plot. It defaults to 300, which is appropriate for most printers, but you may want to use 600 for particularly high-resolution output, or 96 for on-screen (e.g., web) display.
+
+
+
+
+
+
+

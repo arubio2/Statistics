@@ -1,0 +1,153 @@
+---
+title: "The t.test and its friends"
+author: "Angel Rubio"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  rmdformats::readthedown
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+```{css, echo=FALSE}
+/*
+Format
+*/
+
+#postamble::before {
+  content: "";
+  display: block;
+  height: 100px;
+  margin: 0em 0px 30px 0px;
+  background-image: url("https://img.gothru.org/4722/17631445273227275727/overlay/assets/20201012135643.7TCZAJ.jpg?save=optimize");
+  background-size: contain;
+  background-position: center center;
+  background-repeat: no-repeat;
+}
+
+h1.title{
+    font-size: 40pt;
+}
+
+h1{
+    font-size: 25pt;
+}
+
+h2{
+    font-size: 20pt;
+    text-decoration: underline solid;
+}
+
+h3{
+    font-size: 15pt;
+    font-style: italic;
+}
+
+h1,h2,h3{
+    font-family: Helvetica;
+    color: #aa2133;
+}
+
+h3,h4,h5,h6,legend{
+    font-family: Helvetica;
+    color: #0e0e0e;
+}
+
+
+#postamble {
+    color: #aa2133;
+    background: #ffffff;
+    text-align: center;
+    font-family: Helvetica;
+}
+
+#sidebar {
+    color: #ffffff;
+    background: #aa2133;
+}
+
+#sidebar h2 {
+    color: #ffffff;
+    background-color: #0e0e0e;
+    text-decoration: none;
+}
+
+#sidebar a {
+    color: #ffffff;
+}
+
+#sidebar a:hover {
+    background-color: #0e0e0e;
+    color: #ffffff;
+}
+
+```
+
+t-test
+Let's start by generating two sample datasets and performing a t-test.
+
+```{r}
+# Generate two sample datasets
+set.seed(123)
+group1 <- rnorm(30, mean = 50, sd = 5)
+group2 <- rnorm(30, mean = 55, sd = 5)
+
+# Perform t-test
+t_test <- t.test(group1, group2)
+
+cat("t-test Results:\n")
+print(t_test)
+```
+
+# Wilcoxon Test
+
+Next, we'll perform a Wilcoxon test (also known as the Mann-Whitney U test) on the same datasets.
+
+```{r}
+# Perform Wilcoxon test
+wilcox_test <- wilcox.test(group1, group2)
+
+cat("Wilcoxon Test Results:\n")
+print(wilcox_test)
+```
+
+The Wilcox test is a type of Non-parametric Tests. Non-parametric tests are statistical tests that do not assume a specific distribution for the data. They are useful when the assumptions of parametric tests (such as normality) are not met. Examples include the Wilcoxon test and the Kruskal-Wallis test.
+
+# Bootstrap Statistics
+
+Bootstrap statistics involve resampling the data with replacement to create many simulated samples. This method allows estimation of the sampling distribution of a statistic and can be used to calculate confidence intervals and perform hypothesis testing.
+
+## Bootstrap Example
+We'll use bootstrap to estimate the difference in means between the two groups.
+
+```{r}
+# Load necessary library
+library(boot)
+
+# Define a function to calculate the difference in means
+diff_in_means <- function(data, indices) {
+  d <- data[indices, ]
+  return(mean(d$group1) - mean(d$group2))
+}
+
+# Combine the data into a single data frame
+data <- data.frame(group1 = group1, group2 = group2)
+
+# Perform bootstrap
+set.seed(123)
+bootstrap_results <- boot(data, statistic = diff_in_means, R = 1000)
+
+cat("Bootstrap Results:\n")
+print(bootstrap_results)
+
+# Calculate 95% confidence interval
+bootstrap_ci <- boot.ci(bootstrap_results, type = "perc")
+
+cat("Bootstrap 95% Confidence Interval:\n")
+print(bootstrap_ci)
+
+```
+
+# Conclusion
+
+In this document, we have demonstrated how to perform a t-test, Wilcoxon test, and bootstrap statistics using R. We also provided a brief explanation of non-parametric tests and bootstrap statistics. These techniques are useful for analyzing data and understanding the relationships between variables, especially when the assumptions of parametric tests are not met.

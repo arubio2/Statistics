@@ -1,0 +1,339 @@
+---
+title: "Simple Statistical Tests"
+author: "Angel Rubio"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  rmdformats::readthedown
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+```{css, echo=FALSE}
+/*
+Format
+*/
+
+#postamble::before {
+  content: "";
+  display: block;
+  height: 100px;
+  margin: 0em 0px 30px 0px;
+  background-image: url("https://img.gothru.org/4722/17631445273227275727/overlay/assets/20201012135643.7TCZAJ.jpg?save=optimize");
+  background-size: contain;
+  background-position: center center;
+  background-repeat: no-repeat;
+}
+
+h1.title{
+    font-size: 40pt;
+}
+
+h1{
+    font-size: 25pt;
+}
+
+h2{
+    font-size: 20pt;
+    text-decoration: underline solid;
+}
+
+h3{
+    font-size: 15pt;
+    font-style: italic;
+}
+
+h1,h2,h3{
+    font-family: Helvetica;
+    color: #aa2133;
+}
+
+h3,h4,h5,h6,legend{
+    font-family: Helvetica;
+    color: #0e0e0e;
+}
+
+
+#postamble {
+    color: #aa2133;
+    background: #ffffff;
+    text-align: center;
+    font-family: Helvetica;
+}
+
+#sidebar {
+    color: #ffffff;
+    background: #aa2133;
+}
+
+#sidebar h2 {
+    color: #ffffff;
+    background-color: #0e0e0e;
+    text-decoration: none;
+}
+
+#sidebar a {
+    color: #ffffff;
+}
+
+#sidebar a:hover {
+    background-color: #0e0e0e;
+    color: #ffffff;
+}
+
+```
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Introduction
+This document provides a comprehensive analysis of point statistics, measures of dispersion, and higher-order moments. It also includes hypothesis tests related to these statistics, along with tests for normality.
+
+# Data Preparation
+We'll start by generating a sample dataset.
+
+```{r}
+set.seed(123)
+data <- rnorm(100, mean = 50, sd = 10)
+```
+
+# Point Statistics: measures of location
+
+## Mean, Median, and Mode
+
+We already know the definition of each of them. In the case of the mode, there is no point to compute it for continuous data. Theoretically, the mode is the x value that corresponds to the largest y value of the density function. In the case of the normal distribution the theoretical mean, median, and mode coincide.
+
+```{r}
+mean_value <- mean(data)
+median_value <- median(data)
+# mode_value <- as.numeric(names(sort(table(data), decreasing=TRUE)[1])) --> No point to do it
+
+mean_value
+median_value
+# mode_value
+```
+
+# Measures of Dispersion
+
+## Standard Deviation, Variance, Median Absolute Deviation (MAD), Interquartile Range (IQR)
+
+### Standard Deviation
+The standard deviation is a measure of the amount of variation or dispersion in a set of values. It quantifies how much the values in a dataset deviate from the mean (average) of the dataset.
+
+**Formula**: 
+\[ \sigma = \sqrt{\frac{1}{N-1}\sum_{i=1}^{N} (x_i - \bar x)^2} \]
+
+where:
+- \( \sigma \) is the standard deviation,
+- \( N \) is the number of observations,
+- \( x_i \) is each individual observation,
+- \( \bar x \) is the mean of the observations.
+
+### Variance
+Variance is the expectation of the squared deviation of a random variable from its mean. It provides a measure of how the data points spread out from the mean.
+
+**Formula**:
+\[ \sigma^2 = \frac{1}{N-1}\sum_{i=1}^{N} (x_i - \bar x)^2 \]
+
+where:
+- \( \sigma^2 \) is the variance,
+- \( N \) is the number of observations,
+- \( x_i \) is each individual observation,
+- \( \mu \) is the mean of the observations.
+
+### Median Absolute Deviation (MAD)
+The Median Absolute Deviation (MAD) is a robust measure of statistical dispersion. It is the median of the absolute deviations from the dataset's median.
+
+**Formula**:
+\[ \text{MAD} = \text{median}(|x_i - \text{median}(x)|) \]
+
+where:
+- \( \text{MAD} \) is the median absolute deviation,
+- \( x_i \) are the observations in the dataset.
+
+### Interquartile Range (IQR)
+The Interquartile Range (IQR) is a measure of statistical dispersion, or how spread out the values in a dataset are. It is the difference between the third quartile (Q3) and the first quartile (Q1).
+
+**Formula**:
+\[ \text{IQR} = Q3 - Q1 \]
+
+where:
+- \( Q3 \) is the third quartile (75th percentile),
+- \( Q1 \) is the first quartile (25th percentile).
+
+
+
+```{r}
+sd_value <- sd(data)
+variance_value <- var(data)
+mad_value <- mad(data)
+iqr_value <- IQR(data)
+
+sd_value
+variance_value
+mad_value
+iqr_value
+```
+
+# Higher Order Moments
+## Skewness and Kurtosis
+
+```{r}
+library(moments)
+
+skewness_value <- skewness(data)
+kurtosis_value <- kurtosis(data)
+
+skewness_value
+kurtosis_value
+```
+
+
+
+# Confidence Interval for the Mean
+Let's start by generating some sample data and calculating the confidence interval for the mean.
+
+```{r}
+
+# Generate sample data
+set.seed(123)
+sample_data <- rnorm(100, mean = 50, sd = 10)
+
+# Calculate the mean and standard error
+sample_mean <- mean(sample_data)
+sample_se <- sd(sample_data) / sqrt(length(sample_data))
+
+# Calculate the 95% confidence interval
+alpha <- 0.05
+z_score <- qnorm(1 - alpha / 2)
+ci_lower <- sample_mean - z_score * sample_se
+ci_upper <- sample_mean + z_score * sample_se
+
+cat("95% Confidence Interval for the Mean:", ci_lower, "to", ci_upper)
+```
+
+# Confidence Interval for the Variance
+Next, we'll calculate the confidence interval for the variance of the sample data.
+
+```{r}
+
+# Calculate the sample variance
+sample_variance <- var(sample_data)
+
+# Degrees of freedom
+df <- length(sample_data) - 1
+
+# Calculate the chi-square critical values
+chi2_lower <- qchisq(alpha / 2, df)
+chi2_upper <- qchisq(1 - alpha / 2, df)
+
+# Calculate the confidence interval for the variance
+ci_variance_lower <- (df * sample_variance) / chi2_upper
+ci_variance_upper <- (df * sample_variance) / chi2_lower
+
+cat("95% Confidence Interval for the Variance:", ci_variance_lower, "to", ci_variance_upper)
+```
+
+
+# Test a Proportion
+Now, let's test a proportion. We'll use a sample proportion and test whether it is significantly different from a hypothesized population proportion.
+
+```{r}
+
+# Sample data
+successes <- 45
+trials <- 100
+sample_proportion <- successes / trials
+
+# Hypothesized population proportion
+p0 <- 0.5
+
+# Perform a proportion test
+prop_test <- prop.test(successes, trials, p = p0, correct = FALSE)
+
+cat("Proportion Test Results:\n")
+print(prop_test)
+```
+
+
+# Chi-square Test of Proportion
+Finally, we'll perform a Chi-square test of proportion to see if the observed proportions differ from the expected proportions.
+
+```{r}
+
+# Observed frequencies
+observed <- c(50, 30, 20)
+
+# Expected proportions
+expected_proportions <- c(0.4, 0.4, 0.2)
+
+# Calculate expected frequencies
+total <- sum(observed)
+expected <- total * expected_proportions
+
+# Perform the Chi-square test
+chi_square_test <- chisq.test(observed, p = expected_proportions)
+
+cat("Chi-square Test Results:\n")
+print(chi_square_test)
+```
+
+
+## Confidence Interval for the Median
+
+It is also possible to compute the confidence interval for the median (but less used).
+
+```{r}
+library(DescTools)
+
+MedianCI(data, conf.level = 0.95)
+```
+
+# 6. Normality Tests
+
+In the case of parametric tests, usually there is a normality assumption, i.e. the data are supposed to como form a normal distribution. There are two main tests to check that. The null Hypothesis $H_0$ is, in both case, that the data **come** form a normal distribution. Hence, if the p.value is high, we will accept the hypothesis.
+
+## Shapiro-Wilk Test
+
+```{r}
+shapiro_test <- shapiro.test(data)
+shapiro_test
+```
+
+### Kolmogorov-Smirnov Test
+
+```{r}
+ks_test <- ks.test(data, "pnorm", mean = mean(data), sd = sd(data))
+ks_test
+```
+
+### Comparison of Normality Tests
+The Shapiro-Wilk test is more powerful for small sample sizes, while the Kolmogorov-Smirnov test is more general and can be applied to larger sample sizes. Use Shapiro-Wilk for sample sizes less than 50, and Kolmogorov-Smirnov for larger samples.
+
+## 7. Illustrative Examples with R Code
+### Example: Hypothesis Test for Mean
+
+```{r}
+t.test(data, mu = 50) # Test if the mean is 50
+```
+
+### Example: Hypothesis Test for Variance
+
+```{r}
+var_test <- var.test(data, rnorm(100, mean = 50, sd = 10)) # Test if variances are equal
+var_test
+```
+
+### Example: Normality Test
+
+```{r}
+# Shapiro-Wilk Test
+shapiro_test <- shapiro.test(data)
+
+# Kolmogorov-Smirnov Test
+ks_test <- ks.test(data, "pnorm", mean = mean(data), sd = sd(data))
+
+shapiro_test
+ks_test
+```

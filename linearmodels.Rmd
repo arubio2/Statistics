@@ -1,0 +1,228 @@
+---
+title: "Understandin Linear Models"
+author: "Angel Rubio"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  rmdformats::readthedown
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+```{css, echo=FALSE}
+/*
+Format
+*/
+
+#postamble::before {
+  content: "";
+  display: block;
+  height: 100px;
+  margin: 0em 0px 30px 0px;
+  background-image: url("https://img.gothru.org/4722/17631445273227275727/overlay/assets/20201012135643.7TCZAJ.jpg?save=optimize");
+  background-size: contain;
+  background-position: center center;
+  background-repeat: no-repeat;
+}
+
+h1.title{
+    font-size: 40pt;
+}
+
+h1{
+    font-size: 25pt;
+}
+
+h2{
+    font-size: 20pt;
+    text-decoration: underline solid;
+}
+
+h3{
+    font-size: 15pt;
+    font-style: italic;
+}
+
+h1,h2,h3{
+    font-family: Helvetica;
+    color: #aa2133;
+}
+
+h3,h4,h5,h6,legend{
+    font-family: Helvetica;
+    color: #0e0e0e;
+}
+
+
+#postamble {
+    color: #aa2133;
+    background: #ffffff;
+    text-align: center;
+    font-family: Helvetica;
+}
+
+#sidebar {
+    color: #ffffff;
+    background: #aa2133;
+}
+
+#sidebar h2 {
+    color: #ffffff;
+    background-color: #0e0e0e;
+    text-decoration: none;
+}
+
+#sidebar a {
+    color: #ffffff;
+}
+
+#sidebar a:hover {
+    background-color: #0e0e0e;
+    color: #ffffff;
+}
+
+```
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+# Introduction
+
+In this document, we will provide a detailed worked example of a linear model. We will illustrate the null hypotheses that appear in the summary of the model, how to compute the design matrix, the interpretation of the residual standard error, the null hypothesis of the F-statistic, the degrees of freedom, how to predict new values, and other relevant aspects to understand a linear model.
+
+# Load Required Libraries
+```{r}
+# Load necessary libraries
+library(ggplot2)
+```
+
+We will use the mtcars dataset, which is included in the datasets package in R. This dataset contains information about various car models.
+
+```{r}
+# Load the mtcars dataset
+data("mtcars")
+
+# Display the first few rows of the dataset
+head(mtcars)
+```
+
+# Fit a Linear Model
+
+We will fit a linear model to predict mpg (miles per gallon) based on wt (weight) and hp (horsepower).
+
+```{r}
+# Fit linear model
+lm_model <- lm(mpg ~ wt + hp, data = mtcars)
+
+# Display the summary of the model
+summary(lm_model)
+```
+
+# Null Hypotheses in the Summary
+In the summary of the linear model, the null hypotheses are as follows:
+
+* For each coefficient (intercept, wt, hp): The null hypothesis is that the coefficient is equal to zero (i.e., the variable has no effect on the response variable mpg).
+
+* For the F-statistic: The null hypothesis is that all the regression coefficients are equal to zero (i.e., the model with predictors wt and hp does not explain more variability than the model with only the intercept).
+
+# Design Matrix
+
+The design matrix (also known as the model matrix) is a matrix that contains the values of the predictor variables for each observation. We can compute the design matrix using the model.matrix function.
+
+```{r}
+# Compute the design matrix
+design_matrix <- model.matrix(lm_model)
+
+# Display the design matrix
+head(design_matrix)
+```
+
+# Interpretation of the Residual Standard Error
+
+The residual standard error (RSE) is an estimate of the standard deviation of the residuals (errors). It gives us an idea of the typical size of the residuals. In the summary of the linear model, the RSE is reported along with the degrees of freedom.
+
+# Null Hypothesis of the F-statistic
+
+The null hypothesis of the F-statistic is that all the regression coefficients are equal to zero. In other words, the model with predictors wt and hp does not explain more variability in mpg than the model with only the intercept.
+
+# Degrees of Freedom
+
+The degrees of freedom for the residuals (df) are calculated as the number of observations minus the number of estimated parameters. In our model, we have 32 observations and 3 estimated parameters (intercept, wt, hp), so the degrees of freedom are 32 - 3 = 29.
+
+# Predicting New Values
+
+We can use the fitted linear model to predict mpg for new values of wt and hp.
+
+```{r}
+# New data for prediction
+new_data <- data.frame(wt = c(3, 4), hp = c(110, 150))
+
+# Predict new values
+predictions <- predict(lm_model, newdata = new_data)
+
+# Display predictions
+predictions
+```
+
+# Visualizing the Model
+
+We can visualize the relationship between mpg and the predictors wt and hp using ggplot2.
+
+```{r}
+# Scatter plot of mpg vs wt, colored by hp
+ggplot(mtcars, aes(x = wt, y = mpg, color = hp)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE) +
+  labs(title = "Scatter Plot of MPG vs Weight, Colored by Horsepower",
+       x = "Weight (1000 lbs)",
+       y = "Miles per Gallon (MPG)") +
+  theme_minimal()
+```
+
+# Exercises
+
+## Exercise 1: Fit a Linear Model
+
+Fit a linear model to predict `mpg` (miles per gallon) using `hp` (horsepower) and `wt` (weight) from the `mtcars` dataset. Display the summary of the model.
+
+<details>
+<summary>Show Solution</summary>
+
+```{r exercise-1, echo=TRUE}
+# Fit the linear model
+lm_model <- lm(mpg ~ hp + wt, data = mtcars)
+summary(lm_model)
+```
+
+</details>
+
+## Exercise 2: Residual Analysis
+
+Plot the residuals of the linear model from Exercise 1.
+
+<details>
+<summary>Show Solution</summary>
+```{r}
+# Solution
+plot(lm_model$residuals, main = "Residuals of the Linear Model", xlab = "Index", ylab = "Residuals")
+```
+</details>
+
+## Exercise 3: Predict New Values
+
+Use the linear model to predict mpg for new data points where hp is 110 and wt is 2.5. Display the predicted values.
+
+<details>
+<summary>Show Solution</summary>
+```{r}
+# Solution
+new_data <- data.frame(hp = 110, wt = 2.5)
+predicted_mpg <- predict(lm_model, newdata = new_data)
+predicted_mpg
+```
+</details>
+
+
+# Conclusion
+
+In this document, we provided a detailed worked example of a linear model. We illustrated the null hypotheses in the summary of the model, how to compute the design matrix, the interpretation of the residual standard error, the null hypothesis of the F-statistic, the degrees of freedom, how to predict new values, and other relevant aspects to understand a linear model. This comprehensive overview should help in understanding the key components and interpretations of linear models in R.

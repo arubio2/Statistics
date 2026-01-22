@@ -1,0 +1,198 @@
+---
+title: "Statistical Hypothesis testing"
+author: "Angel Rubio"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  rmdformats::readthedown
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+```{css, echo=FALSE}
+/*
+Format
+*/
+
+#postamble::before {
+  content: "";
+  display: block;
+  height: 100px;
+  margin: 0em 0px 30px 0px;
+  background-image: url("https://img.gothru.org/4722/17631445273227275727/overlay/assets/20201012135643.7TCZAJ.jpg?save=optimize");
+  background-size: contain;
+  background-position: center center;
+  background-repeat: no-repeat;
+}
+
+h1.title{
+    font-size: 40pt;
+}
+
+h1{
+    font-size: 25pt;
+}
+
+h2{
+    font-size: 20pt;
+    text-decoration: underline solid;
+}
+
+h3{
+    font-size: 15pt;
+    font-style: italic;
+}
+
+h1,h2,h3{
+    font-family: Helvetica;
+    color: #aa2133;
+}
+
+h3,h4,h5,h6,legend{
+    font-family: Helvetica;
+    color: #0e0e0e;
+}
+
+
+#postamble {
+    color: #aa2133;
+    background: #ffffff;
+    text-align: center;
+    font-family: Helvetica;
+}
+
+#sidebar {
+    color: #ffffff;
+    background: #aa2133;
+}
+
+#sidebar h2 {
+    color: #ffffff;
+    background-color: #0e0e0e;
+    text-decoration: none;
+}
+
+#sidebar a {
+    color: #ffffff;
+}
+
+#sidebar a:hover {
+    background-color: #0e0e0e;
+    color: #ffffff;
+}
+
+```
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Statistical Hypothesis Testing
+
+### Null and Alternative Hypotheses
+
+**Null Hypothesis (H0)**: The statement being tested, usually a statement of no effect or no difference.
+
+**Alternative Hypothesis (H1)**: The statement we want to test against the null hypothesis, indicating the presence of an effect or difference.
+
+**Example:**
+Let's consider we want to compare the Behobia times of men and women.
+
+* H0: The mean Behobia time for men is equal to the mean Behobia time for women.
+
+* H1: The mean Behobia time for men is different from the mean Behobia time for women.
+
+### Types of Errors
+
+**Type I Error (α)**: Rejecting the null hypothesis when it is true. The significance level (alpha) is the probability of making a Type I error.
+
+**Type II Error (β)**: Failing to reject the null hypothesis when it is false. The power of a test (1-β) is the probability of correctly rejecting the null hypothesis.
+
+### P-value
+
+**Definition**: The p-value is the probability of observing the test results, or something more extreme, assuming the null hypothesis is true.
+
+**Calculation and Interpretation**: A small p-value (typically ≤ 0.05) indicates strong evidence against the null hypothesis, so you reject the null hypothesis. A large p-value (> 0.05) indicates weak evidence against the null hypothesis, so you fail to reject the null hypothesis.
+
+### Test Statistics
+
+**Z-test**: Used for hypothesis testing when the population variance is known and the sample size is large.
+
+**t-test**: Used for hypothesis testing when the population variance is unknown and/or the sample size is small.
+
+**Chi-square test**: Used for hypothesis testing on categorical data to assess how likely it is that an observed distribution is due to chance.
+
+**F-test**: Used to compare two variances and often used in the context of ANOVA.
+
+### Example: Comparing Behobia Times for Men and Women
+
+Let's use real data to compare Behobia times for men and women.
+
+```{r}
+# Load necessary libraries
+library(dplyr)
+library(ggplot2)
+library(lubridate)
+
+# Load the dataset
+library(readxl)
+url <- "http://canales.diariovasco.com/documentos/behobia-sansebastian-2015.xls"
+destfile <- "behobia2015.xls"
+curl::curl_download(url, destfile)
+behobia_data <- read_excel(destfile)
+
+# Inspect the data
+head(behobia_data)
+
+# Filter data for men and women
+men_times <- behobia_data %>% filter(grepl("M", CATEGORIA)) %>% select(tiempo) %>% as.data.frame
+men_times <- lapply(lapply(men_times, hms), period_to_seconds)[[1]]
+women_times <- behobia_data %>% filter(grepl("F", CATEGORIA)) %>% select(tiempo) %>% as.data.frame
+women_times <- lapply(lapply(women_times, hms), period_to_seconds)[[1]]
+
+# Perform a t-test
+t_test_result <- t.test(men_times, women_times)
+
+# Display the t-test result
+t_test_result
+
+plot(density(women_times), xlim = c(0,12000), col ="red")
+lines(density(men_times), xlim = c(0,12000), col = "dark green")
+
+boxplot(women_times, men_times, col= c("red", "dark green"), outline=F)
+
+```
+
+### Interpretation
+
+The results of the t-test provide a p-value and a confidence interval. If the p-value is less than 0.05, we reject the null hypothesis and conclude that there is a significant difference between the Behobia times of men and women. Otherwise, we fail to reject the null hypothesis.
+
+### Exercise
+
+Compare the results of the participants whose family name starts with "R" and those that starts with "S". Is it significant?
+
+```{r}
+# Filter data for men and women
+R_times <- behobia_data %>% filter(substr(`PRIMER APELLIDO`, 1, 1) == "R") %>% select(tiempo) %>% as.data.frame
+R_times <- lapply(lapply(R_times, hms), period_to_seconds)[[1]]
+S_times <- behobia_data %>% filter(substr(`PRIMER APELLIDO`, 1, 1) == "S") %>% select(tiempo) %>% as.data.frame
+S_times <- lapply(lapply(S_times, hms), period_to_seconds)[[1]]
+
+# Perform a t-test
+t_test_result <- t.test(R_times, S_times)
+
+# Display the t-test result
+t_test_result
+
+plot(density(women_times), xlim = c(0,12000), col ="red")
+lines(density(men_times), xlim = c(0,12000), col = "dark green")
+
+boxplot(women_times, men_times, col= c("red", "dark green"), outline=F)
+
+```
+
+
+### Conclusion
+
+In this example, we compared the Behobia times for men and women using a t-test. Based on the p-value obtained from the test, we made a decision about whether to reject the null hypothesis. This process highlights the importance of hypothesis testing in making data-driven decisions.
+
