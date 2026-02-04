@@ -53,7 +53,3 @@ This repository includes / Este repositorio incluye:
 * **Scripts:** R files with step-by-step code. / Archivos de R con código paso a paso.
 * **Data:** Datasets for practice. / Conjuntos de datos para practicar.
 * **Docs:** Additional theoretical explanations. / Explicaciones teóricas adicionales.
-
----
-
-¿Te gustaría que añada una sección específica sobre cómo cargar las librerías necesarias (como `ggplot2` o `tidyverse`) una vez que los alumnos abran RStudio?
