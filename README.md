@@ -1,8 +1,8 @@
-# Biostatistics Tutorial / Tutorial de Bioestadística
+# Statistics Tutorial / Tutorial de Estadística
 
-Welcome to the repository for the **Biostatistics Tutorial**. This resource is designed to provide a practical foundation in statistical analysis applied to biological sciences using R.
+Welcome to the repository for the **Statistics Tutorial**. This resource is designed to provide a practical foundation in statistical analysis applied to science and research using R.
 
-Bienvenido al repositorio del **Tutorial de Bioestadística**. Este recurso está diseñado para proporcionar una base práctica en el análisis estadístico aplicado a las ciencias biológicas utilizando R.
+Bienvenido al repositorio del **Tutorial de Estadística**. Este recurso está diseñado para proporcionar una base práctica en el análisis estadístico aplicado a las ciencia y la investigación utilizando R.
 
 ---
 
